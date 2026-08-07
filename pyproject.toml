@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "higher-order-connectomes"
+version = "0.1.0"
+description = "Control-theoretic and topological analysis pipeline for structural connectomes."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "bctpy",
+  "matplotlib",
+  "networkx",
+  "nibabel",
+  "neuromaps",
+  "nilearn",
+  "notebook",
+  "numpy",
+  "pandas",
+  "persim",
+  "ripser",
+  "scipy",
+  "seaborn",
+  "statsmodels",
+  "tqdm",
+]
+
+[project.optional-dependencies]
+# Second-library arm of scripts/representative_stability/
+gudhi = ["gudhi"]
+# Manim scenes under animations/ and scripts/09_reachable_state_cloud_scene.py
+animation = ["manim"]
+dev = ["pytest"]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -7,6 +7,7 @@ Part A: for 3 subjects x 3 scales x {degree, cycle} x k in {1,2,3,5}, solve both
         plus effective rank at eps = 1e-5 (floor applied to each W as-is), eps = 0 (no floor), and with the
         floor rescaled (eps_nctpy = (rho+1) eps).
 Part B: all 70 subjects, cycle - degree ER / PR under the nctpy normalization with eps = 1e-5 (k-averaged).
+Outputs go to runs/<name>/revision/regime/ (choose the run with ``--run <name>``).
 """
 from __future__ import annotations
 
@@ -14,10 +15,18 @@ import numpy as np
 import pandas as pd
 from scipy.linalg import solve_continuous_lyapunov
 
-from _common import (K_VALUES, N_SUBJECTS, OUT_DIR, SCALES, Spectral, holm, load_ranks, load_stack, metrics_from_eigs,
-                     paired_stats)
+from regime_common import (K_VALUES, N_SUBJECTS, SCALES, Spectral, holm, load_ranks, load_stack, metrics_from_eigs,
+                           out_dir, paired_stats)
 from hoc.control import gramian_metrics
 from hoc.preprocessing import stabilize_adjacency
+from hoc.runs import stage_from_argv
+
+ctx = stage_from_argv("revision/regime/02_nctpy_equivalence")
+ctx.require_stage("00_prepare_data")
+ctx.require_stage("01_primary")
+ctx.begin()
+ROOT = ctx.root
+OUT_DIR = out_dir(ROOT)
 
 
 def nctpy_normalization(A, c=1.0):
@@ -36,8 +45,8 @@ def lyap(A, S):
 
 rows = []
 for scale in SCALES:
-    stack = load_stack(scale)
-    ranks = load_ranks(scale)
+    stack = load_stack(scale, ROOT)
+    ranks = load_ranks(scale, ROOT)
     for si in (0, 33, 69):
         A0 = stack[si]
         A_ours, lam = stabilize_adjacency(A0, 1.0)
@@ -71,8 +80,8 @@ print("lambda_max vs rho max |diff|:", (eq["lambda_max"] - eq["rho"]).abs().max(
 # Part B: full cohort under nctpy normalization (eps = 1e-5) and ours at c = 1 for comparison
 out = []
 for scale in SCALES:
-    stack = load_stack(scale)
-    ranks = load_ranks(scale)
+    stack = load_stack(scale, ROOT)
+    ranks = load_ranks(scale, ROOT)
     for si in range(N_SUBJECTS):
         spec = Spectral(stack[si])
         rho = np.abs(np.linalg.eigvals(stack[si])).max()
@@ -94,3 +103,4 @@ for (norm, scale), g in coh.groupby(["normalization", "scale"]):
 summ = holm(pd.DataFrame(summ), ["normalization", "metric"])
 summ.to_csv(OUT_DIR / "nctpy_cohort_summary.csv", index=False)
 print(summ[["normalization", "scale", "metric", "mean_diff", "median_diff", "n_positive", "wilcoxon_p", "rank_biserial"]])
+ctx.finish()

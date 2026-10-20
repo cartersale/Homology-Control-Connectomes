@@ -45,3 +45,6 @@ Cell output*.csv
 
 # Manuscript, reviewer letter and planning notes (kept out of the public repo)
 /paper/
+
+# Run directories (one per analysis run; see src/hoc/runs.py)
+/runs/

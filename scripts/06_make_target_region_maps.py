@@ -1,5 +1,14 @@
 #!/usr/bin/env python
-"""Export rasterized SVG brain-region maps for named target states."""
+"""Export rasterized SVG brain-region maps for named target states.
+
+Usage: python scripts/06_make_target_region_maps.py [--run <name>] [--scale all]
+
+Target vectors are read from <run>/processed/targets_scale-*.npz (``--run``,
+default $HOC_RUN or "main"; ``--run results`` reads the legacy tree) and rebuilt
+from the raw connectomes if missing. Maps go to
+<run>/figures/section_target_state_selection/target_region_maps_scale-{scale}/
+(runs/results-derived/... for the legacy tree).
+"""
 
 from __future__ import annotations
 
@@ -28,6 +37,7 @@ from hoc.atlas import EXCLUDED_LABELS, SCALE_TO_RESOLUTION, build_label_table
 from hoc.config import load_config
 from hoc.dataset import load_raw_connectomes
 from hoc.preprocessing import preprocess_structural_adjacency
+from hoc.runs import config_variant, figures_dir, resolve_run_dir
 from hoc.targets import (
     DISTRIBUTED_TARGETS,
     LANDMARK_DEFINITIONS,
@@ -61,7 +71,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output-dir",
         default=None,
-        help="Optional output directory. Defaults to figures/section_target_state_selection/target_region_maps_scale-{scale}.",
+        help="Optional output directory. Defaults to <run>/figures/section_target_state_selection/target_region_maps_scale-{scale}.",
+    )
+    parser.add_argument(
+        "--run",
+        default=None,
+        help="Run name under runs/ (default: $HOC_RUN or 'main'; 'results' = legacy tree, read-only).",
     )
     return parser.parse_args()
 
@@ -86,10 +101,10 @@ def reference_adjacency(raw_connectomes: dict[int, np.ndarray], scale: int) -> n
     return np.mean(np.stack(processed, axis=0), axis=0)
 
 
-def target_vectors_for_scale(config: dict, scale: int) -> tuple[pd.DataFrame, dict[str, np.ndarray]]:
+def target_vectors_for_scale(config: dict, scale: int, run_dir: Path) -> tuple[pd.DataFrame, dict[str, np.ndarray]]:
     """Load or rebuild named target vectors for one atlas scale."""
     labels = build_label_table(scale=scale, atlas_dir=config["paths"]["atlas_dir"])
-    target_path = REPO_ROOT / config["paths"]["results_dir"] / "processed" / f"targets_scale-{scale}.npz"
+    target_path = run_dir / "processed" / f"targets_scale-{scale}.npz"
     if target_path.exists():
         archive = np.load(target_path)
         if all(target_name in archive.files for target_name in NAMED_TARGETS):
@@ -218,17 +233,12 @@ def save_target_map(
     return out
 
 
-def export_target_maps(config: dict, scale: int, output_dir: Path | None = None) -> list[Path]:
+def export_target_maps(config: dict, scale: int, run_dir: Path, output_dir: Path | None = None) -> list[Path]:
     """Export all named target-region maps for one scale."""
     mpl.rcParams.update({"svg.fonttype": "none", "axes.unicode_minus": False})
     if output_dir is None:
-        output_dir = (
-            REPO_ROOT
-            / config["paths"]["figures_dir"]
-            / "section_target_state_selection"
-            / f"target_region_maps_scale-{scale}"
-        )
-    labels, targets = target_vectors_for_scale(config, scale)
+        output_dir = figures_dir(run_dir, "section_target_state_selection", f"target_region_maps_scale-{scale}")
+    labels, targets = target_vectors_for_scale(config, scale, run_dir)
     geometry = load_surface_geometry(scale, config["paths"]["atlas_dir"])
     if len(labels) != next(iter(targets.values())).shape[0]:
         raise ValueError(f"Label/target length mismatch at scale {scale}.")
@@ -248,10 +258,14 @@ def main() -> None:
     """Run target-region map export."""
     args = parse_args()
     config = load_config(REPO_ROOT / args.config)
+    run_dir = resolve_run_dir(args.run, variant=config_variant(config))
+    if not run_dir.exists():
+        raise FileNotFoundError(f"Run directory {run_dir} does not exist; pass --run <name> or set $HOC_RUN.")
     all_outputs = []
     for scale in requested_scales(args.scale):
         output_dir = Path(args.output_dir) if args.output_dir is not None else None
-        outputs = export_target_maps(config, scale, output_dir=output_dir)
+        outputs = export_target_maps(config, scale, run_dir, output_dir=output_dir)
+
         all_outputs.extend(outputs)
     for path in all_outputs:
         print(path)

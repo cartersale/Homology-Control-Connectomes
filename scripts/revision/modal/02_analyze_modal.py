@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-"""Statistics for the modal/average-controllability comparison (reads 01 output)."""
+"""Statistics for the modal/average-controllability comparison (reads 01 output).
+
+Reads and writes runs/<name>/revision/modal/ (choose the run with ``--run <name>``).
+"""
 
 from __future__ import annotations
 
@@ -10,10 +13,17 @@ import numpy as np
 import pandas as pd
 from scipy.stats import rankdata, spearmanr
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "regime"))
-from _common import REPO_ROOT  # noqa: E402
+REGIME_DIR = Path(__file__).resolve().parents[1] / "regime"  # shared helpers: regime/regime_common.py
+if str(REGIME_DIR) not in sys.path:
+    sys.path.insert(0, str(REGIME_DIR))
+import regime_common  # noqa: E402,F401  (puts src/ on sys.path)
+from hoc.runs import stage_from_argv  # noqa: E402
 
-OUT = REPO_ROOT / "results" / "revision" / "modal"
+ctx = stage_from_argv("revision/modal/02_analyze_modal")
+ctx.require_stage("01_primary")
+ctx.require_stage("revision/modal/01_compute_modal")
+ctx.begin()
+OUT = ctx.root / "revision" / "modal"
 d = pd.read_csv(OUT / "set_level_modal.csv.gz")
 PRED = ["perron_loading", "perron_share", "modal_gu", "modal_ct", "avg_ctrl", "red_G", "red_G_perp", "red_F", "q1_G"]
 TARGETS = ["q1", "effective_rank", "er_raw"]
@@ -126,7 +136,7 @@ pd.DataFrame(pr).to_csv(OUT / "cycle_vs_counterfactual.csv", index=False)
 
 # ---------- F: node-level correspondence of modal/avg controllability with the rankings ----------
 nd = pd.read_csv(OUT / "node_level_modal.csv.gz")
-ns = pd.read_csv(REPO_ROOT / "results" / "primary" / "node_scores.csv", usecols=["subject_id", "scale", "node_index", "method", "score"])
+ns = pd.read_csv(ctx.root / "primary" / "node_scores.csv", usecols=["subject_id", "scale", "node_index", "method", "score"])
 ns = ns.pivot_table(index=["subject_id", "scale", "node_index"], columns="method", values="score").reset_index()
 nrow = []
 for c in [0.01, 0.1, 1.0]:
@@ -212,3 +222,4 @@ for (scale, k, c), g in d[d.family.isin(["cycle_participation", "degree_strength
     rows.append(r)
 pd.DataFrame(rows).to_csv(OUT / "cycle_minus_degree_node_vs_set.csv", index=False)
 print("done I")
+ctx.finish()

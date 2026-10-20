@@ -13,12 +13,17 @@ selections land in similar areas, at three granularities:
 - physical proximity on the fsaverage5 surface: chamfer distance between the two
   schemes' driver-set centroids, referenced to a random-set null.
 
-Reads the outputs of `run_representative_stability.py`; recomputes no topology.
+Reads the outputs of `run_representative_stability.py` from
+``<run>/<--results-subdir>/`` and writes to ``<run>/<--results-subdir>/anatomy/``;
+recomputes no topology. The run is chosen with ``--run <name>`` (default $HOC_RUN
+or "main"); the legacy ``results`` tree is read-only and cannot be used. Each
+scale is recorded as its own stage in the run manifest; rerunning a finished
+scale needs ``--overwrite``.
 
 Example
 -------
-    python scripts/representative_stability/analyze_selection_anatomy.py
-    python scripts/representative_stability/analyze_selection_anatomy.py --k-values 5 15
+    python scripts/representative_stability/analyze_selection_anatomy.py --run main
+    python scripts/representative_stability/analyze_selection_anatomy.py --run main --k-values 5 15
 """
 
 from __future__ import annotations
@@ -46,6 +51,7 @@ from hoc.atlas import EXCLUDED_LABELS, SCALE_TO_RESOLUTION, build_label_table
 from hoc.config import load_config
 from hoc.io import write_csv
 from hoc.paths import ensure_directory, resolve_repo_path
+from hoc.runs import RunContext, add_run_arguments
 from hoc.utils import make_rng
 
 # Ordering used wherever arms are listed; any scheme absent from the run is skipped.
@@ -71,7 +77,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--results-subdir",
         default="representative_stability",
-        help="Subdirectory of the results dir holding the stability-run outputs.",
+        help="Subdirectory of the run directory holding the stability-run outputs.",
     )
     parser.add_argument(
         "--k-values",
@@ -86,7 +92,16 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Skip the surface-geometry step (drops the spatial-proximity readout).",
     )
+    add_run_arguments(parser)
     return parser.parse_args()
+
+
+def stage_name(args: argparse.Namespace) -> str:
+    """Manifest stage name: one stage per input subdirectory and scale."""
+    stage = "representative_stability/analyze_selection_anatomy"
+    if args.results_subdir != "representative_stability":
+        stage += f":{args.results_subdir}"
+    return stage + f":scale-{args.scale}"
 
 
 def parcel_centroids(scale: int, atlas_dir: str | Path) -> np.ndarray:
@@ -464,8 +479,10 @@ def report(
 def main() -> None:
     args = parse_args()
     config = load_config(REPO_ROOT / args.config)
-    results_dir = resolve_repo_path(config["paths"]["results_dir"]) / args.results_subdir
-    output_dir = ensure_directory(results_dir / "anatomy")
+    ctx = RunContext.from_args(stage_name(args), args)
+    results_dir = ctx.root / args.results_subdir
+    output_dir = results_dir / "anatomy"
+    ctx.begin()
 
     geometry = pd.read_csv(results_dir / f"geometry_by_scheme_scale-{args.scale}.csv")
     node_scores = pd.read_csv(results_dir / f"node_scores_by_scheme_scale-{args.scale}.csv")
@@ -496,18 +513,28 @@ def main() -> None:
     frequent = top_regions(frequency, report_k)
 
     suffix = f"scale-{args.scale}"
-    write_csv(frequency, output_dir / f"selection_frequency_{suffix}.csv")
-    write_csv(group_table, output_dir / f"group_enrichment_{suffix}.csv")
-    write_csv(region_table, output_dir / f"region_enrichment_{suffix}.csv")
-    write_csv(hemi_table, output_dir / f"hemisphere_enrichment_{suffix}.csv")
-    write_csv(contrast, output_dir / f"composition_contrast_{suffix}.csv")
-    write_csv(agreement, output_dir / f"subject_agreement_{suffix}.csv")
-    write_csv(agreement_summary, output_dir / f"subject_agreement_summary_{suffix}.csv")
-    write_csv(profile, output_dir / f"score_profile_by_group_{suffix}.csv")
-    write_csv(frequent, output_dir / f"top_selected_parcels_k-{report_k}_{suffix}.csv")
+    ensure_directory(output_dir)
+    written: list[Path] = []
+
+    def save(frame: pd.DataFrame, name: str) -> None:
+        path = output_dir / name
+        write_csv(frame, path)
+        written.append(path)
+
+    save(frequency, f"selection_frequency_{suffix}.csv")
+    save(group_table, f"group_enrichment_{suffix}.csv")
+    save(region_table, f"region_enrichment_{suffix}.csv")
+    save(hemi_table, f"hemisphere_enrichment_{suffix}.csv")
+    save(contrast, f"composition_contrast_{suffix}.csv")
+    save(agreement, f"subject_agreement_{suffix}.csv")
+    save(agreement_summary, f"subject_agreement_summary_{suffix}.csv")
+    save(profile, f"score_profile_by_group_{suffix}.csv")
+    save(frequent, f"top_selected_parcels_k-{report_k}_{suffix}.csv")
 
     report(group_table, contrast, agreement_summary, profile, frequent, report_k)
+    ctx.finish(written)
     print(f"\nOutputs written to {output_dir}")
+
 
 
 if __name__ == "__main__":

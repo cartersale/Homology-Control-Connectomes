@@ -10,6 +10,8 @@ Per subject x scale x k x method (static top-k degree_strength / cycle_participa
   dist_nearest_excl same on the driver-excluded target
   coupling         sum_i x_i^2 * sum_{s in S} A0[i, s]  (structural connection strength of target mass to drivers)
 Output: target_energies_long.csv.gz
+
+Run: python scripts/revision/targets/02_target_energies.py --run <name> [--overwrite]  (reads/writes runs/<name>/)
 """
 
 from __future__ import annotations
@@ -21,6 +23,8 @@ import pandas as pd
 from scipy.spatial.distance import cdist
 
 import common as C
+
+ctx = C.start_stage(__file__, ["00_prepare_data", "01_primary", C.stage("01_build_targets")])
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
@@ -73,3 +77,4 @@ cat = pd.read_csv(C.OUT / "target_catalog.csv")[["scale", "target_name", "family
 out = out.merge(cat, on=["scale", "target_name"], how="left")
 out.to_csv(C.OUT / "target_energies_long.csv.gz", index=False)
 print(out.shape)
+ctx.finish()

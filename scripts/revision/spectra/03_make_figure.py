@@ -7,7 +7,8 @@ Panels
   C  within-subject percentile of cycle and degree sets among the 100 random sets
   D  per-set Perron loading vs effective rank (rankings + random sets)
 
-Writes results/revision/spectra/{spectrum_summary.csv, fig_spectra_draft.png}.
+Writes runs/<name>/revision/spectra/{spectrum_summary.csv, fig_spectra_draft.png}
+(choose the run with ``--run <name>``).
 """
 
 from __future__ import annotations
@@ -23,8 +24,12 @@ import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-OUT = REPO_ROOT / "results" / "revision" / "spectra"
-TAB = OUT / "tables"
+sys.path.insert(0, str(REPO_ROOT / "src"))
+from hoc.runs import stage_from_argv  # noqa: E402
+
+STAGE = "revision/spectra/03_make_figure"
+OUT: Path  # set in main(): <run>/revision/spectra
+TAB: Path  # set in main(): OUT / "tables"
 SCALES = [68, 114, 219]
 K_VALUES = [1, 2, 3, 5]
 N_TOP = 15
@@ -90,6 +95,13 @@ def style(ax):
 
 
 def main() -> None:
+    global OUT, TAB
+    ctx = stage_from_argv(STAGE)
+    ctx.require_stage("revision/spectra/01_compute_spectra")
+    ctx.require_stage("revision/spectra/02_analyze")
+    ctx.begin()
+    OUT = ctx.root / "revision" / "spectra"
+    TAB = OUT / "tables"
     summ = spectrum_summary()
     summ.to_csv(OUT / "spectrum_summary.csv", index=False)
     t1 = pd.read_csv(TAB / "t1_rankings_vs_random.csv")
@@ -193,6 +205,7 @@ def main() -> None:
     fig.suptitle("DRAFT — c = 0.1, ε = 1e-5, infinite horizon, n = 70 subjects", x=0.01, ha="left", fontsize=9, color=INK2)
     fig.savefig(OUT / "fig_spectra_draft.png", dpi=200, bbox_inches="tight")
     print("saved", OUT / "fig_spectra_draft.png")
+    ctx.finish()
 
 
 if __name__ == "__main__":

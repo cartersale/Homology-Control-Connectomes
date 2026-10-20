@@ -7,6 +7,7 @@ Outputs
   task1_signflip.csv                   (interpolated zero crossing of mean / median diff, and of n_positive = 35)
   task3_perron.csv                     (Perron loading, Perron trace fraction per method; Spearman summaries)
   fig_csweep_draft.png
+Outputs go to runs/<name>/revision/regime/ (choose the run with ``--run <name>``).
 """
 from __future__ import annotations
 
@@ -18,7 +19,14 @@ import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
 
-from _common import OUT_DIR, holm, paired_stats
+from regime_common import holm, out_dir, paired_stats
+from hoc.runs import stage_from_argv
+
+ctx = stage_from_argv("revision/regime/05_summarize_csweep")
+ctx.require_stage("revision/regime/01_csweep_perron")
+ctx.begin()
+ROOT = ctx.root
+OUT_DIR = out_dir(ROOT)
 
 m = pd.read_csv(OUT_DIR / "csweep_sets_methods.csv")
 sp = pd.read_csv(OUT_DIR / "csweep_spearman.csv")
@@ -160,3 +168,4 @@ pd.set_option("display.width", 200)
 print(t1[t1.metric == "effective_rank"][["scale", "c", "mean_diff", "median_diff", "n_positive", "p_holm", "rank_biserial"]].to_string())
 print(flip.to_string())
 print(t3s.to_string())
+ctx.finish()

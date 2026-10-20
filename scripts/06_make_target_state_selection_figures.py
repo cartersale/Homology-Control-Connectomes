@@ -1,5 +1,11 @@
 #!/usr/bin/env python
-"""Make target-state figures for the concentrated-to-distributed redesign."""
+"""Make target-state figures for the concentrated-to-distributed redesign.
+
+Usage: python scripts/06_make_target_state_selection_figures.py [--run <name>]
+(default $HOC_RUN or "main"; ``--run results`` reads the legacy tree). Figures go
+to <run>/figures/section_target_state_selection/ (runs/results-derived/... for
+the legacy tree).
+"""
 
 from __future__ import annotations
 
@@ -20,10 +26,12 @@ SRC_ROOT = REPO_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
+from hoc.runs import figures_dir, reader_run_dir
 
-RESULTS_DIR = REPO_ROOT / "results"
+RESULTS_DIR = reader_run_dir()
 STATISTICS_DIR = RESULTS_DIR / "statistics"
-FIGURES_DIR = REPO_ROOT / "figures" / "section_target_state_selection"
+FIGURES_DIR = figures_dir(RESULTS_DIR, "section_target_state_selection")
+
 
 SCALES = [68, 114, 219]
 SCALE_COLORS = {68: "#4e79a7", 114: "#59a14f", 219: "#e15759"}

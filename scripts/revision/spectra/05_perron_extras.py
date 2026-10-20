@@ -1,16 +1,23 @@
 #!/usr/bin/env python
 """Extras for Task 4: piecewise Spearman (Perron loading <= / > 0.05) and subject-level tests
-of the Perron share of W (v^T W v / tr W), degree vs cycle vs random, from perron_c_check.csv."""
+of the Perron share of W (v^T W v / tr W), degree vs cycle vs random, from perron_c_check.csv.
+
+Reads and writes runs/<name>/revision/spectra/ (choose the run with ``--run <name>``)."""
 import sys
 from pathlib import Path
 import numpy as np, pandas as pd
 from scipy.stats import spearmanr
 from statsmodels.stats.multitest import multipletests
 REPO_ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(REPO_ROOT / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from hoc.runs import stage_from_argv  # noqa: E402
 from importlib import import_module
 paired_stats = import_module("02_analyze").paired_stats
-OUT = REPO_ROOT / "results/revision/spectra"
+ctx = stage_from_argv("revision/spectra/05_perron_extras")
+ctx.require_stage("revision/spectra/04_perron_c_check")
+ctx.begin()
+OUT = ctx.root / "revision" / "spectra"
 d = pd.read_csv(OUT / "perron_c_check.csv")
 rows = []
 for (c, sc, k), g in d.groupby(["c", "scale", "k"]):
@@ -33,3 +40,4 @@ t["p_holm"] = np.nan
 for _, idx in t.groupby(["c", "scale"]).groups.items():
     t.loc[idx, "p_holm"] = multipletests(t.loc[idx, "p"], method="holm")[1]
 t.to_csv(OUT / "tables/t4d_perron_share_W_tests.csv", index=False); print(t.round(3).to_string())
+ctx.finish()

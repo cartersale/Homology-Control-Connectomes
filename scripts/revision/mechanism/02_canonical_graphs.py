@@ -17,7 +17,8 @@ Per graph, following the main pipeline (A = A0 - (l1 + c) I; infinite-horizon Gr
   per set: q1, effective rank, Perron loading L_S, coverage distance (mean over non-driver nodes of the
   distance to the closest driver; hop count for binary graphs, shortest path with length 1/w for weighted)
   at c in {0.01, 0.1, 1}: degree q1 minus random mean, percentile among random sets.
-Outputs: results/revision/mechanism/canonical_graphs.csv.gz, canonical_summary.csv
+Outputs (runs/<name>/revision/mechanism/; choose the run with ``--run <name>``): canonical_graphs.csv.gz,
+canonical_summary.csv
 """
 
 from __future__ import annotations
@@ -36,10 +37,15 @@ from joblib import Parallel, delayed
 from scipy.sparse.csgraph import shortest_path
 from scipy.stats import spearmanr
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "nulls"))
-from _common import REPO_ROOT, SCALES, Spectral, load_stack, percentile_of, spectrum_metrics  # noqa: E402
+NULLS_DIR = Path(__file__).resolve().parents[1] / "nulls"  # shared helpers: nulls/nulls_common.py
+if str(NULLS_DIR) not in sys.path:
+    sys.path.insert(0, str(NULLS_DIR))
+from nulls_common import SCALES, Spectral, load_stack, percentile_of, spectrum_metrics  # noqa: E402
+from hoc.runs import stage_from_argv  # noqa: E402
+from hoc.utils import n_jobs  # noqa: E402
 
-OUT = REPO_ROOT / "results" / "revision" / "mechanism"
+ROOT: Path  # run directory (runs/<name>/), set in main()
+OUT: Path  # <run>/revision/mechanism, set in main()
 MODELS = ("ER", "BA", "WS", "SBM", "RGG")
 WEIGHTINGS = ("binary", "weighted")
 N_GRAPHS = 50
@@ -50,7 +56,7 @@ SEED = 20261001
 
 
 def density(scale: int) -> float:
-    A = load_stack(scale)
+    A = load_stack(scale, ROOT)
     iu = np.triu_indices(scale, 1)
     return float(np.mean([(a[iu] > 0).mean() for a in A]))
 
@@ -120,7 +126,7 @@ def analyze(A: np.ndarray, binary: bool, rng: np.random.Generator) -> tuple[dict
 def job(model: str, weighting: str, scale: int, idx: int, p: float, weight_pool: np.ndarray) -> list[dict]:
     rng = np.random.default_rng([SEED, MODELS.index(model) if model in MODELS else 9, WEIGHTINGS.index(weighting), scale, idx])
     if model == "CONN":
-        A = load_stack(scale)[idx]
+        A = load_stack(scale, ROOT)[idx]
         if weighting == "binary":
             A = (A > 0).astype(float)
     else:
@@ -138,18 +144,24 @@ def job(model: str, weighting: str, scale: int, idx: int, p: float, weight_pool:
 
 
 def main():
+    global ROOT, OUT
+    ctx = stage_from_argv("revision/mechanism/02_canonical_graphs")
+    ctx.require_stage("00_prepare_data")
+    ctx.begin()
+    ROOT = ctx.root
+    OUT = ROOT / "revision" / "mechanism"
     OUT.mkdir(parents=True, exist_ok=True)
     jobs = []
     for scale in SCALES:
         p = density(scale)
-        stack = load_stack(scale)
+        stack = load_stack(scale, ROOT)
         pool = np.concatenate([a[np.triu_indices(scale, 1)] for a in stack])
         pool = pool[pool > 0]
         for weighting in WEIGHTINGS:
             for model in MODELS:
                 jobs += [(model, weighting, scale, i, p, pool) for i in range(N_GRAPHS)]
             jobs += [("CONN", weighting, scale, i, p, pool) for i in range(stack.shape[0]) if np.all(stack[i].sum(0) > 0)]
-    out = Parallel(n_jobs=12)(delayed(job)(*j) for j in jobs)
+    out = Parallel(n_jobs=n_jobs(12))(delayed(job)(*j) for j in jobs)
     df = pd.DataFrame([r for rows in out for r in rows])
     df.to_csv(OUT / "canonical_graphs.csv.gz", index=False)
 
@@ -166,6 +178,7 @@ def main():
     for wt in WEIGHTINGS:
         print(f"== {wt}, c = 0.1, k >= 2")
         print(show[show["weighting"] == wt].drop(columns=["weighting", "c", "kgrp"]).round(3).to_string(index=False))
+    ctx.finish()
 
 
 if __name__ == "__main__":

@@ -1,5 +1,9 @@
 #!/usr/bin/env python
-"""Summaries and supplement tables for Task 1 (representatives x scales x k)."""
+"""Summaries and supplement tables for Task 1 (representatives x scales x k).
+
+Run: python scripts/revision/stability/summarize_representatives.py --run <name> [--overwrite]
+Reads runs/<name>/revision/stability/representatives/, writes .../tables/.
+"""
 
 from __future__ import annotations
 
@@ -8,13 +12,15 @@ import pandas as pd
 import statsmodels.formula.api as smf
 from scipy.stats import spearmanr, wilcoxon
 
-from stability_common import OUTPUT_DIR, VARIANTS, make_rng, paired_summary
+from stability_common import STAGE_PREFIX, VARIANTS, make_rng, output_dir, paired_summary
+from hoc.runs import stage_from_argv  # noqa: E402
 
 SCALES = (68, 114, 219)
 K_MAIN = (1, 2, 3, 5)
 SHORT = {"ripser": "Ripser cocycle", "gudhi": "GUDHI pairing", "geodesic": "Length-minimized", "birth_edge": "Birth edge"}
-IN = OUTPUT_DIR / "representatives"
-OUT = OUTPUT_DIR / "tables"
+# Set from the run directory in main().
+IN = None  # <run>/revision/stability/representatives
+OUT = None  # <run>/revision/stability/tables
 
 
 def pfmt(p: float) -> str:
@@ -241,6 +247,11 @@ def tex_regression(reg: pd.DataFrame) -> str:
 
 
 def main():
+    global IN, OUT
+    ctx = stage_from_argv(STAGE_PREFIX + "summarize_representatives")
+    ctx.require_stage(STAGE_PREFIX + "run_representatives_all_scales")
+    ctx.begin()
+    IN, OUT = output_dir(ctx.root) / "representatives", output_dir(ctx.root) / "tables"
     OUT.mkdir(parents=True, exist_ok=True)
     per, agr = load()
     res = result_level(per)
@@ -266,6 +277,7 @@ def main():
     print(rl[cols].round(3).to_string(index=False))
     print(reg.round(3).to_string(index=False))
     print(wv.round(2).to_string(index=False))
+    ctx.finish()
 
 
 if __name__ == "__main__":

@@ -11,12 +11,13 @@ Per network: lambda1, lambda2, gap, R0..R3, cos(s, v1), r_W (edge-weighted), r_b
 edges), s's, s'Ws. Per subject: real minus null-mean deltas, share of the lambda1 and gap excess
 carried by R1, and within-subject Spearman rho across the 50 nulls.
 
-Outputs (results/revision/nulls/rayleigh/): networks.csv.gz, per_subject.csv, summary.csv
+Outputs (runs/<name>/revision/nulls/rayleigh/; choose the run with ``--run <name>``): networks.csv.gz, per_subject.csv, summary.csv
 """
 
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 
@@ -26,9 +27,13 @@ import pandas as pd
 from joblib import Parallel, delayed
 from scipy.stats import spearmanr, pearsonr
 
-from _common import N_SUBJECTS, NULL_TYPES, OUT_DIR, SCALES, load_stack
+from nulls_common import N_SUBJECTS, NULL_TYPES, SCALES, load_stack, out_dir
+from hoc.runs import stage_from_argv
+from hoc.utils import n_jobs
 
-DEST = OUT_DIR / "rayleigh"
+ROOT: Path  # run directory (runs/<name>/), set in main()
+OUT_DIR: Path  # <run>/revision/nulls, set in main()
+DEST: Path  # OUT_DIR / "rayleigh", set in main()
 N_QUOTIENTS = 4  # R0..R3
 
 
@@ -68,7 +73,7 @@ def stats(A: np.ndarray) -> dict:
 def job(null: str, scale: int, subject: int) -> list[dict]:
     ids = {"null": null, "scale": scale, "subject": subject}
     if null == "real":
-        return [{**ids, "null_index": -1, **stats(load_stack(scale)[subject])}]
+        return [{**ids, "null_index": -1, **stats(load_stack(scale, ROOT)[subject])}]
     triu = np.load(OUT_DIR / "networks" / null / f"scale-{scale}" / f"sub-{subject:03d}.npz")["triu"]
     iu = np.triu_indices(scale, 1)
     rows = []
@@ -102,9 +107,17 @@ def per_subject(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def main() -> None:
+    global ROOT, OUT_DIR, DEST
+    ctx = stage_from_argv("revision/nulls/04_rayleigh_bound")
+    ctx.require_stage("00_prepare_data")
+    ctx.require_stage("revision/nulls/01_run_nulls")
+    ctx.begin()
+    ROOT = ctx.root
+    OUT_DIR = out_dir(ROOT)
+    DEST = OUT_DIR / "rayleigh"
     DEST.mkdir(parents=True, exist_ok=True)
     tasks = [(n, sc, s) for sc in SCALES for s in range(N_SUBJECTS) for n in ("real",) + NULL_TYPES]
-    rows = Parallel(n_jobs=-1, verbose=0)(delayed(job)(*t) for t in tasks)
+    rows = Parallel(n_jobs=n_jobs(-1), verbose=0)(delayed(job)(*t) for t in tasks)
     df = pd.DataFrame([r for chunk in rows for r in chunk])
     df.to_csv(DEST / "networks.csv.gz", index=False)
     ps = per_subject(df)
@@ -116,6 +129,7 @@ def main() -> None:
     print(means, "\n")
     print(summary[["d_lambda1", "d_R0", "d_R1", "share_l1_R1", "share_gap_R1", "slack_real", "slack_null",
                    "rho_R1_l1", "rho_rW_l1", "rho_rbct_l1", "rho_rW_gap", "pearson_rW_sTWs", "sd_sTs_rel"]].T)
+    ctx.finish()
 
 
 if __name__ == "__main__":

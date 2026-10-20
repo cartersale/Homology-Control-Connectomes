@@ -14,23 +14,27 @@ On each perturbed matrix all rankings are recomputed from scratch and compared w
 the unperturbed ones (Spearman, top-k Jaccard); the cycle-minus-degree ER/PR
 difference is recomputed on the perturbed network with the perturbed rankings.
 
-Output: results/revision/stability/perturbation/per_draw_scale-{S}.csv and
+Output: runs/<name>/revision/stability/perturbation/per_draw_scale-{S}.csv and
 unperturbed_scores_scale-{S}.npz.
+
+Run: python scripts/revision/stability/run_perturbation_stability.py --run <name> [--subject-limit N] [--overwrite]
+(workers default to $HOC_N_JOBS or 12).
 """
 
 from __future__ import annotations
 
 import argparse
 from concurrent.futures import ProcessPoolExecutor
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from hoc.preprocessing import dropout_perturbation, multiplicative_noise_perturbation
 from stability_common import (
+    STAGE_PREFIX,
+    output_dir,
     BASE_SEED,
     CONFIG,
-    OUTPUT_DIR,
     VARIANTS,
     EigenGramian,
     jaccard,
@@ -41,6 +45,9 @@ from stability_common import (
     top_k_nodes,
     variant_scores,
 )
+from hoc.preprocessing import dropout_perturbation, multiplicative_noise_perturbation  # noqa: E402
+from hoc.runs import RunContext, add_run_arguments, partial_stage  # noqa: E402
+from hoc.utils import n_jobs  # noqa: E402
 
 K_VALUES = (1, 2, 3, 5, 15)
 RANKINGS = (*VARIANTS, "degree")
@@ -58,8 +65,8 @@ def perturb(adjacency, family, level, rng):
 
 
 def run_subject(args):
-    scale, subject_index, n_draws = args
-    adjacency = load_stack(scale)[subject_index]
+    scale, subject_index, n_draws, root = args
+    adjacency = load_stack(scale, root)[subject_index]
     base = variant_scores(adjacency)
     base_sets = {r: {k: top_k_nodes(base[r], k) for k in K_VALUES} for r in RANKINGS}
     rows = []
@@ -97,17 +104,22 @@ def main():
     parser.add_argument("--scales", type=int, nargs="+", default=[68, 114, 219])
     parser.add_argument("--subject-limit", type=int, default=None)
     parser.add_argument("--n-draws", type=int, default=int(CONFIG["robustness"]["n_perturbations"]))
-    parser.add_argument("--workers", type=int, default=12)
+    parser.add_argument("--workers", type=int, default=n_jobs(12))
+    add_run_arguments(parser)
     args = parser.parse_args()
-    out = OUTPUT_DIR / "perturbation"
+    stage = partial_stage(STAGE_PREFIX + Path(__file__).stem, scales=(args.scales, [68, 114, 219]))
+    ctx = RunContext.from_args(stage, args, config_path="config/default.toml")
+    ctx.require_stage("00_prepare_data")
+    ctx.begin()
+    out = output_dir(ctx.root) / "perturbation"
     out.mkdir(parents=True, exist_ok=True)
     for scale in args.scales:
-        n_subjects = load_stack(scale).shape[0]
+        n_subjects = load_stack(scale, ctx.root).shape[0]
         if args.subject_limit:
             n_subjects = min(n_subjects, args.subject_limit)
         rows, base_scores = [], {}
         with ProcessPoolExecutor(args.workers) as pool:
-            for subject_index, base, r in pool.map(run_subject, [(scale, s, args.n_draws) for s in range(n_subjects)]):
+            for subject_index, base, r in pool.map(run_subject, [(scale, s, args.n_draws, str(ctx.root)) for s in range(n_subjects)]):
                 rows.extend(r)
                 for name, values in base.items():
                     base_scores.setdefault(name, {})[subject_index] = values
@@ -118,6 +130,7 @@ def main():
             **{name: np.stack([d[i] for i in sorted(d)]) for name, d in base_scores.items()},
         )
         print(f"scale {scale}: {len(rows)} rows", flush=True)
+    ctx.finish()
 
 
 if __name__ == "__main__":

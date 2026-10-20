@@ -23,7 +23,8 @@ and (iii) the 100 primary random sets, compute per set:
   maj_violation: max_m [sum_{top m} eig(W) - sum_{top m} eig(G)] / tr W  (<= 0: eig(W) majorised by eig(G))
   pr_decomp_check: exact identity PR(W) = (sum_i tr W_i)^2 / sum_ij <W_i, W_j>
 
-Writes results/revision/modal/set_level_modal.csv.gz and node_level_modal.csv.gz.
+Writes runs/<name>/revision/modal/set_level_modal.csv.gz and node_level_modal.csv.gz
+(choose the run with ``--run <name>``).
 """
 
 from __future__ import annotations
@@ -34,11 +35,14 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "regime"))
-from _common import REPO_ROOT, SCALES, Spectral, load_ranks, load_stack, metrics_from_eigs, random_sets, run_parallel  # noqa: E402
+REGIME_DIR = Path(__file__).resolve().parents[1] / "regime"  # shared helpers: regime/regime_common.py
+if str(REGIME_DIR) not in sys.path:
+    sys.path.insert(0, str(REGIME_DIR))
+from regime_common import SCALES, Spectral, load_ranks, load_stack, metrics_from_eigs, random_sets, run_parallel  # noqa: E402
+from hoc.runs import stage_from_argv  # noqa: E402
+from hoc.utils import n_jobs  # noqa: E402
 
-OUT = REPO_ROOT / "results" / "revision" / "modal"
-OUT.mkdir(parents=True, exist_ok=True)
+OUT: Path  # set in main(): <run>/revision/modal
 C_VALUES = (0.01, 0.1, 1.0)
 K_SET = (2, 3, 5)
 EPS = 1.0e-5
@@ -146,14 +150,21 @@ def subject_job(scale: int, si: int, subject_id: str, adjacency: np.ndarray, ord
 
 
 def main() -> None:
+    global OUT
+    ctx = stage_from_argv("revision/modal/01_compute_modal")
+    ctx.require_stage("00_prepare_data")
+    ctx.require_stage("01_primary")
+    ctx.begin()
+    OUT = ctx.root / "revision" / "modal"
+    OUT.mkdir(parents=True, exist_ok=True)
     jobs = []
     for scale in SCALES:
-        stack = load_stack(scale)
-        ranks = load_ranks(scale)
+        stack = load_stack(scale, ctx.root)
+        ranks = load_ranks(scale, ctx.root)
         subjects = sorted({s for s, _ in ranks})
         for si, sid in enumerate(subjects):
             jobs.append((scale, si, sid, stack[si], {m: ranks[(sid, m)] for m in METHODS}))
-    res = run_parallel(subject_job, jobs, n_jobs=12)
+    res = run_parallel(subject_job, jobs, n_jobs=n_jobs(12))
     df = pd.DataFrame([r for rr, _ in res for r in rr])
     nd = pd.DataFrame([r for _, nn in res for r in nn])
     print("trace identity (tr W = sum avg_ctrl) max rel err:",
@@ -162,6 +173,7 @@ def main() -> None:
     df.to_csv(OUT / "set_level_modal.csv.gz", index=False)
     nd.to_csv(OUT / "node_level_modal.csv.gz", index=False)
     print(df.shape, nd.shape)
+    ctx.finish()
 
 
 if __name__ == "__main__":

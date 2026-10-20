@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-"""Render markdown tables used in REPORT.md -> results/revision/targets/_tables.md"""
+"""Render markdown tables used in REPORT.md -> <run>/revision/targets/_tables.md
+
+Run: python scripts/revision/targets/09_report_tables.py --run <name> [--overwrite]  (reads/writes runs/<name>/)
+"""
 
 from __future__ import annotations
 
@@ -7,6 +10,18 @@ import numpy as np
 import pandas as pd
 
 import common as C
+
+ctx = C.start_stage(
+    __file__,
+    [
+        C.stage("01_build_targets"),
+        C.stage("03_target_stats"),
+        C.stage("04_sensitivity"),
+        C.stage("05_spin_tests"),
+        C.stage("06_network_enrichment"),
+        C.stage("07_proximity_controls"),
+    ],
+)
 
 O = C.OUT
 named = pd.read_csv(O / "named_target_summary.csv")
@@ -130,3 +145,4 @@ for t in ["legacy_occipital_module", "kw_occipital_module", "kw_association_modu
         out.append(f"- **{t} @ {s}** (n={r.n_positive}): {r.positive_parcels.replace(';', ', ')}")
 (O / "_tables.md").write_text("\n".join(out) + "\n")
 print("ok")
+ctx.finish()

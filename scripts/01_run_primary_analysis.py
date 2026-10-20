@@ -24,6 +24,8 @@ from hoc.atlas import build_label_table
 from hoc.config import load_config
 from hoc.control import assemble_gramian, gramian_metrics, single_node_gramians, subspace_overlap, target_energy
 from hoc.dataset import load_raw_connectomes
+from hoc.dataset import build_subject_table
+from hoc.runs import RunContext, add_run_arguments
 from hoc.io import prepare_results_tree, write_csv, write_npz
 from hoc.landscape import generate_driver_sets, greedy_extension, summarize_landscape
 from hoc.paths import resolve_repo_path
@@ -47,6 +49,7 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Skip exhaustive/sampled landscape calculations for faster test runs.",
     )
+    add_run_arguments(parser)
     return parser.parse_args()
 
 
@@ -324,7 +327,9 @@ def target_difference_tables(
 def main() -> None:
     args = parse_args()
     config = load_config(REPO_ROOT / args.config)
-    results = prepare_results_tree(config["paths"]["results_dir"])
+    ctx = RunContext.from_args("01_primary", args)
+    ctx.require_stage("00_prepare_data")
+    results = prepare_results_tree(ctx.root)
 
     analysis_config = config["analysis"]
     control_config = config["control"]
@@ -337,6 +342,7 @@ def main() -> None:
     n_subjects = next(iter(raw_connectomes.values())).shape[2]
     if args.subject_limit is not None:
         n_subjects = min(n_subjects, args.subject_limit)
+    ctx.begin(build_subject_table(n_subjects)["subject_id"].tolist())
 
     primary_methods = [str(method) for method in ranking_config["primary_methods"]]
     secondary_methods = [str(method) for method in ranking_config["secondary_methods"]]
@@ -710,10 +716,12 @@ def main() -> None:
         if table_name == "target_metadata":
             write_csv(table, results["primary"] / f"{table_name}.csv")
         else:
-            write_csv(table, results["root"] / "statistics" / f"{table_name}.csv")
+            write_csv(table, results["statistics"] / f"{table_name}.csv")
     write_csv(pd.DataFrame(geometry_rows), results["primary"] / "geometry_metrics.csv")
     write_csv(pd.DataFrame(overlap_rows), results["primary"] / "eigenspace_overlap.csv")
     write_csv(pd.DataFrame(weighted_rows), results["primary"] / "weighted_inputs.csv")
+
+    ctx.finish()
 
 
 if __name__ == "__main__":

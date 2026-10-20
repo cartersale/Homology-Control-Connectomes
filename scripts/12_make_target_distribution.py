@@ -6,11 +6,16 @@ across-parcel distribution of the subject-mean cycle-minus-degree percent energy
 difference for single cortical-parcel targets, with the four named landmarks annotated
 and significance-starred. The y-axis is clipped to a readable range (the single-parcel
 outliers otherwise span several orders of magnitude).
+
+Usage: python scripts/12_make_target_distribution.py [--run <name>]
+(default $HOC_RUN or "main"; ``--run results`` reads the legacy tree, with the
+figure written to runs/results-derived/figures/).
 """
 
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
 os.environ.setdefault("MPLCONFIGDIR", "/private/tmp/matplotlib")
@@ -21,8 +26,11 @@ import pandas as pd
 from matplotlib.lines import Line2D
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-FIGURES_DIR = REPO_ROOT / "figures"
-STATS = REPO_ROOT / "results" / "statistics"
+SRC_ROOT = REPO_ROOT / "src"
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
+
+from hoc.runs import figures_dir, reader_run_dir
 
 SCALES = [68, 114, 219]
 SCALE_COLORS = {68: "#4C72B0", 114: "#55A868", 219: "#C44E52"}
@@ -43,9 +51,12 @@ def stars(p_holm: float, reject: bool) -> str:
 
 
 def main() -> None:
-    subj = pd.read_csv(STATS / "target_subject_differences.csv")
+    run_dir = reader_run_dir()
+    figures = figures_dir(run_dir)
+    stats = run_dir / "statistics"
+    subj = pd.read_csv(stats / "target_subject_differences.csv")
     subj = subj[subj["selection_strategy"] == "static"]
-    named = pd.read_csv(STATS / "target_named_summary.csv")
+    named = pd.read_csv(stats / "target_named_summary.csv")
     named = named[named["metric"] == METRIC]
 
     cortical = subj[subj["target_family"] == "single_cortical_parcel"]
@@ -86,7 +97,8 @@ def main() -> None:
               frameon=False, loc="upper right", ncol=3, columnspacing=1.0, handletextpad=0.3)
     fig.tight_layout()
     for suffix in ("svg", "png"):
-        fig.savefig(FIGURES_DIR / f"target_distribution_violin.{suffix}", dpi=300, bbox_inches="tight", facecolor="white")
+        fig.savefig(figures / f"target_distribution_violin.{suffix}"
+, dpi=300, bbox_inches="tight", facecolor="white")
     plt.close(fig)
 
 

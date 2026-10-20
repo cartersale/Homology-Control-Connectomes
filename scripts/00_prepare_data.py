@@ -19,6 +19,7 @@ if str(SRC_ROOT) not in sys.path:
 from hoc.config import load_config
 from hoc.dataset import build_scale_metadata, build_subject_table, load_raw_connectomes
 from hoc.atlas import build_label_table
+from hoc.runs import RunContext, add_run_arguments
 from hoc.io import prepare_results_tree, write_csv, write_npz
 from hoc.preprocessing import preprocess_structural_adjacency
 from hoc.utils import write_json
@@ -28,13 +29,15 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default="config/default.toml", help="Path to the TOML config file.")
     parser.add_argument("--subject-limit", type=int, default=None, help="Optional cap for smoke tests.")
+    add_run_arguments(parser)
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
     config = load_config(REPO_ROOT / args.config)
-    results = prepare_results_tree(config["paths"]["results_dir"])
+    ctx = RunContext.from_args("00_prepare_data", args)
+    results = prepare_results_tree(ctx.root)
 
     raw_connectomes = load_raw_connectomes(config["paths"]["raw_connectomes"])
     scales = [int(scale) for scale in config["analysis"]["parcellation_scales"]]
@@ -43,6 +46,7 @@ def main() -> None:
     n_subjects = next(iter(raw_connectomes.values())).shape[2]
     if args.subject_limit is not None:
         n_subjects = min(n_subjects, args.subject_limit)
+    ctx.begin(build_subject_table(n_subjects)["subject_id"].tolist())
 
     write_csv(build_subject_table(n_subjects), results["metadata"] / "subjects.csv")
     write_csv(build_scale_metadata(scales, atlas_dir), results["metadata"] / "scale_metadata.csv")
@@ -68,6 +72,8 @@ def main() -> None:
             cohort_reference=cohort_reference,
         )
         write_csv(labels, results["processed"] / f"atlas_labels_scale-{scale}.csv")
+
+    ctx.finish()
 
 
 if __name__ == "__main__":

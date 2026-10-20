@@ -3,10 +3,10 @@
 Checks
 1. W (eigenbasis) vs hoc.control.single_node_gramians/assemble_gramian (Lyapunov) for several
    subjects, c values and horizons.
-2. Reproduce results/primary/geometry_metrics.csv (c=0.1, eps=1e-5) for all static rankings and
+2. Reproduce <run>/primary/geometry_metrics.csv (c=0.1, eps=1e-5) for all static rankings and
    all 100 random sets, all subjects/scales/k.
-3. Reproduce results/robustness/sensitivity_summary.csv (c=0.01 and 1.0; eps sweep; finite horizons).
-Writes results/revision/regime/validation.json
+3. Reproduce <run>/robustness/sensitivity_summary.csv (c=0.01 and 1.0; eps sweep; finite horizons).
+Writes <run>/revision/regime/validation.json, where <run> = runs/<name>/ (choose it with ``--run <name>``).
 """
 from __future__ import annotations
 
@@ -15,17 +15,26 @@ import json
 import numpy as np
 import pandas as pd
 
-from _common import (K_VALUES, METHODS, N_SUBJECTS, OUT_DIR, REPO_ROOT, SCALES, Spectral, load_ranks, load_stack,
-                     metrics_from_eigs, random_sets, run_parallel)
+from regime_common import (K_VALUES, METHODS, N_SUBJECTS, SCALES, Spectral, load_ranks, load_stack,
+                           metrics_from_eigs, out_dir, random_sets, run_parallel)
 from hoc.control import assemble_gramian, gramian_metrics, single_node_gramians
 from hoc.preprocessing import stabilize_adjacency
+from hoc.runs import stage_from_argv
+
+ctx = stage_from_argv("revision/regime/00_validate")
+ctx.require_stage("00_prepare_data")
+ctx.require_stage("01_primary")
+ctx.require_stage("02_robustness")
+ctx.begin()
+ROOT = ctx.root
+OUT_DIR = out_dir(ROOT)
 
 report: dict = {}
 
 # ---- 1. direct comparison with library ----
 rows = []
 for scale in SCALES:
-    stack = load_stack(scale)
+    stack = load_stack(scale, ROOT)
     for subject_index in (0, 33, 69):
         spec = Spectral(stack[subject_index])
         for c in (0.01, 0.1, 1.0):
@@ -68,15 +77,15 @@ def primary_subject(scale, subject_index, ranks, adjacency):
     return out
 
 
-geo = pd.read_csv(REPO_ROOT / "results/primary/geometry_metrics.csv")
+geo = pd.read_csv(ROOT / "primary/geometry_metrics.csv")
 geo = geo[geo["selection_strategy"] == "static"].copy()
 geo["rs"] = -1
 rmask = geo["method"] == "random"
 geo.loc[rmask, "rs"] = geo[rmask].groupby(["subject_id", "scale", "k"]).cumcount()
 allrows = []
 for scale in SCALES:
-    stack = load_stack(scale)
-    ranks = load_ranks(scale)
+    stack = load_stack(scale, ROOT)
+    ranks = load_ranks(scale, ROOT)
     res = run_parallel(primary_subject, [(scale, i, {key: v for key, v in ranks.items() if key[0] == f"sub-{i:03d}"}, stack[i]) for i in range(N_SUBJECTS)])
     for r in res:
         allrows.extend(r)
@@ -90,7 +99,7 @@ report["primary_max_abs_d_log10E"] = float(np.max(np.abs(merged["log10_average_e
 print({k: v for k, v in report.items() if k.startswith("primary")}, flush=True)
 
 # ---- 3. sensitivity_summary.csv ----
-sens = pd.read_csv(REPO_ROOT / "results/robustness/sensitivity_summary.csv")
+sens = pd.read_csv(ROOT / "robustness/sensitivity_summary.csv")
 sens = sens[sens["k"].isin(K_VALUES + (7, 10, 14, 6, 11, 23, 22, 44))]
 
 
@@ -114,8 +123,8 @@ def sens_subject(scale, subject_index, ranks, adjacency):
 
 allrows = []
 for scale in SCALES:
-    stack = load_stack(scale)
-    ranks = load_ranks(scale)
+    stack = load_stack(scale, ROOT)
+    ranks = load_ranks(scale, ROOT)
     res = run_parallel(sens_subject, [(scale, i, {key: v for key, v in ranks.items() if key[0] == f"sub-{i:03d}"}, stack[i]) for i in range(N_SUBJECTS)])
     for r in res:
         allrows.extend(r)
@@ -134,3 +143,4 @@ bad = m.assign(d=np.abs(m["effective_rank"] - m["er_new"])).sort_values("d", asc
 print(bad[["scale", "k", "c_value", "horizon", "epsilon", "method", "effective_rank", "er_new"]])
 print({k: v for k, v in report.items() if k.startswith("sens")})
 (OUT_DIR / "validation.json").write_text(json.dumps(report, indent=2))
+ctx.finish()

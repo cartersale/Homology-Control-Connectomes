@@ -4,6 +4,8 @@
 Statistic: mean divergence of parcels assigned to each network; null from 10,000 Vasa spins (seed 20260423);
 two-sided p = (1 + #|null - mean(null)| >= |obs - mean(null)|)/(1 + n). Also counts of each network among the
 top-15 cycle-only and degree-only parcels.
+
+Run: python scripts/revision/targets/06_network_enrichment.py --run <name> [--overwrite]  (reads/writes runs/<name>/)
 """
 
 from __future__ import annotations
@@ -15,6 +17,8 @@ import pandas as pd
 from neuromaps.nulls.spins import gen_spinsamples
 
 import common as C
+
+ctx = C.start_stage(__file__, ["00_prepare_data", C.stage("01_build_targets"), C.stage("05_spin_tests")])
 
 warnings.filterwarnings("ignore")
 maps = pd.read_csv(C.OUT / "parcel_maps_for_spin.csv")
@@ -47,3 +51,4 @@ top = pd.DataFrame(top_rows).fillna(0)
 top.to_csv(C.OUT / "top15_network_composition.csv", index=False)
 print(res.round(4).to_string())
 print(top.drop(columns="parcels").to_string())
+ctx.finish()

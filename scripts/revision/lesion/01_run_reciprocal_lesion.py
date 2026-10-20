@@ -12,7 +12,10 @@ drivers = top-k by the ranking recomputed on the lesioned adjacency.
 Size-normalisation references: for every (lesion, k), 100 random k-sets drawn from the
 surviving nodes are evaluated in the intact and lesioned networks (static protocol, matched
 identities); for the recompute protocol the intact reference is 100 random k-sets over all N
-nodes.  Outputs are written to results/revision/lesion/.
+nodes.  Outputs are written to runs/<name>/revision/lesion/.
+
+Run: python scripts/revision/lesion/01_run_reciprocal_lesion.py --run <name> [--overwrite]
+(workers default to $HOC_N_JOBS or 12).
 """
 
 from __future__ import annotations
@@ -29,12 +32,13 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from lesion_core import (  # noqa: E402
-    BASE_SEED, HUB_COUNTS, K_VALUES, OUT_DIR, SCALES, SpectralSystem, load_stack,
-    metrics_from_eigenvalues, top_k, top_k_excluding,
+    BASE_SEED, HUB_COUNTS, K_VALUES, SCALES, STAGE_PREFIX, SpectralSystem, load_stack,
+    metrics_from_eigenvalues, out_dir, top_k, top_k_excluding,
 )
+from hoc.runs import RunContext, add_run_arguments, partial_stage  # noqa: E402
 from hoc.rankings import strength_scores  # noqa: E402
 from hoc.topology import cycle_participation  # noqa: E402
-from hoc.utils import subject_seed  # noqa: E402
+from hoc.utils import n_jobs, subject_seed  # noqa: E402
 
 N_RANDOM_LESIONS = 100
 N_RANDOM_DRIVER_SETS = 100
@@ -56,10 +60,10 @@ def random_sets(rng, pool: np.ndarray, k: int, n: int) -> np.ndarray:
     return np.stack([rng.choice(pool, size=k, replace=False) for _ in range(n)])
 
 
-def run_subject(task: tuple[int, int, int | None]) -> list[dict]:
-    scale, subject, n_rand_lesions = task
+def run_subject(task: tuple[int, int, int | None, str]) -> list[dict]:
+    scale, subject, n_rand_lesions, root = task
     warnings.filterwarnings("ignore", category=RuntimeWarning)  # spurious Accelerate matmul warnings
-    adjacency = load_stack(scale)[subject]
+    adjacency = load_stack(scale, root)[subject]
     n = adjacency.shape[0]
     scores = rankings(adjacency)
     intact = SpectralSystem(adjacency)
@@ -155,10 +159,17 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--subjects", type=int, default=70)
     parser.add_argument("--random-lesions", type=int, default=N_RANDOM_LESIONS)
-    parser.add_argument("--workers", type=int, default=12)
-    parser.add_argument("--out", default=str(OUT_DIR / "lesion_rows.csv.gz"))
+    parser.add_argument("--workers", type=int, default=n_jobs(12))
+    parser.add_argument("--out", default=None, help="default: <run>/revision/lesion/lesion_rows.csv.gz")
+    add_run_arguments(parser)
     args = parser.parse_args()
-    tasks = [(s, i, args.random_lesions) for s in reversed(SCALES) for i in range(args.subjects)]
+    stage = partial_stage(STAGE_PREFIX + Path(__file__).stem, subjects=(args.subjects, 70))
+    ctx = RunContext.from_args(stage, args, config_path="config/default.toml")
+    ctx.require_stage("00_prepare_data")
+    ctx.begin()
+    if args.out is None:
+        args.out = str(out_dir(ctx.root) / "lesion_rows.csv.gz")
+    tasks = [(s, i, args.random_lesions, str(ctx.root)) for s in reversed(SCALES) for i in range(args.subjects)]
     t0 = time.time()
     rows: list[dict] = []
     with ProcessPoolExecutor(max_workers=args.workers) as pool:
@@ -170,6 +181,7 @@ def main() -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(rows).to_csv(out, index=False)
     print(f"wrote {len(rows)} rows to {out} in {time.time() - t0:.0f}s")
+    ctx.finish()
 
 
 if __name__ == "__main__":

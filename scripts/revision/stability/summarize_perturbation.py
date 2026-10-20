@@ -1,5 +1,10 @@
 #!/usr/bin/env python
-"""Summaries and supplement tables for Task 2 (edge-weight perturbation stability)."""
+"""Summaries and supplement tables for Task 2 (edge-weight perturbation stability).
+
+Run: python scripts/revision/stability/summarize_perturbation.py --run <name> [--overwrite]
+Reads runs/<name>/revision/stability/{perturbation,representatives}/, writes .../tables/.
+Scales with fewer than 70 subjects are skipped (a WARNING line names them).
+"""
 
 from __future__ import annotations
 
@@ -7,21 +12,31 @@ import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr, wilcoxon
 
-from stability_common import OUTPUT_DIR, VARIANTS
+from stability_common import STAGE_PREFIX, VARIANTS, output_dir
+from hoc.runs import stage_from_argv  # noqa: E402
 
 SCALES = (68, 114, 219)
 K_ER = (1, 2, 3, 5)
-IN = OUTPUT_DIR / "perturbation"
-OUT = OUTPUT_DIR / "tables"
-REP = OUTPUT_DIR / "representatives"
+# Set from the run directory in main().
+IN = None  # <run>/revision/stability/perturbation
+OUT = None  # <run>/revision/stability/tables
+REP = None  # <run>/revision/stability/representatives
+MIN_SUBJECTS = 70
 LEVEL_LABEL = {"noise": r"$\sigma$", "dropout": "$p$"}
 SHORT = {"ripser": "Ripser CP", "gudhi": "GUDHI pairing", "geodesic": "Length-min.", "birth_edge": "Birth edge", "degree": "Degree"}
 
 
 def load() -> pd.DataFrame:
+    for s in SCALES:
+        if not (IN / f"per_draw_scale-{s}.csv").exists():
+            print(f"WARNING: per_draw_scale-{s}.csv not found in {IN}; scale {s} skipped", flush=True)
     frames = [pd.read_csv(IN / f"per_draw_scale-{s}.csv") for s in SCALES if (IN / f"per_draw_scale-{s}.csv").exists()]
     draws = pd.concat(frames, ignore_index=True)
     complete = draws.groupby("scale").subject_id.nunique()
+    for scale, n in complete.items():
+        if n < MIN_SUBJECTS:
+            print(f"WARNING: perturbation draws for scale {scale} have only {n} subjects (< {MIN_SUBJECTS}); "
+                  f"scale {scale} skipped in all perturbation tables", flush=True)
     return draws[draws.scale.isin(complete[complete >= 70].index)]
 
 
@@ -33,6 +48,8 @@ def between_subject_reference() -> pd.DataFrame:
             continue
         data = np.load(path)
         if data["degree"].shape[0] < 70:
+            print(f"WARNING: unperturbed scores for scale {scale} have only {data['degree'].shape[0]} subjects "
+                  f"(< {MIN_SUBJECTS}); scale {scale} skipped in the between-subject reference", flush=True)
             continue
         for name in (*VARIANTS, "degree"):
             m = data[name]
@@ -148,6 +165,13 @@ def tex_er(er: pd.DataFrame, variant="ripser") -> str:
 
 
 def main():
+    global IN, OUT, REP
+    ctx = stage_from_argv(STAGE_PREFIX + "summarize_perturbation")
+    ctx.require_stage(STAGE_PREFIX + "run_perturbation_stability")
+    ctx.require_stage(STAGE_PREFIX + "run_representatives_all_scales")
+    ctx.begin()
+    root = output_dir(ctx.root)
+    IN, OUT, REP = root / "perturbation", root / "tables", root / "representatives"
     OUT.mkdir(parents=True, exist_ok=True)
     draws = load()
     st = rank_stability(draws)
@@ -164,6 +188,7 @@ def main():
     print(er[er.metric == "er"].round(3).to_string(index=False))
     print(ref.round(3).to_string(index=False))
     print(rescaled.to_string(index=False))
+    ctx.finish()
 
 
 if __name__ == "__main__":

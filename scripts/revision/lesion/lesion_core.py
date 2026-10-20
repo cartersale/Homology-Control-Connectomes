@@ -9,6 +9,10 @@ with A = V diag(lambda) V^T.  The eigenvalues of W_S equal those of M_S o C, so 
 computed without solving Lyapunov equations.  ``validate_against_lyapunov`` checks this
 against hoc.control (single_node_gramians / assemble_gramian / gramian_metrics).
 Metric definitions replicate hoc.control.gramian_metrics exactly (W + eps I, floored at eps).
+
+Paths: inputs and outputs live in a run directory (hoc.runs, ``--run <name>``). Callers pass
+the run root: ``load_stack(scale, root)`` reads ``<root>/processed``, ``out_dir(root)`` is
+``<root>/revision/lesion``.
 """
 
 from __future__ import annotations
@@ -33,11 +37,16 @@ SCALES = [int(s) for s in CONFIG["analysis"]["parcellation_scales"]]
 K_VALUES = [int(k) for k in CONFIG["analysis"]["top_k_values"]]
 HUB_COUNTS = [int(h) for h in CONFIG["hub_lesion"]["hub_counts"]]
 BASE_SEED = int(CONFIG["analysis"]["random_seed"])
-OUT_DIR = REPO_ROOT / "results" / "revision" / "lesion"
+STAGE_PREFIX = "revision/lesion/"
 
 
-def load_stack(scale: int) -> np.ndarray:
-    data = np.load(REPO_ROOT / "results" / "processed" / f"connectomes_scale-{scale}.npz")
+def out_dir(root: str | Path) -> Path:
+    """Output folder of the lesion analysis inside a run directory."""
+    return Path(root) / "revision" / "lesion"
+
+
+def load_stack(scale: int, root: str | Path) -> np.ndarray:
+    data = np.load(Path(root) / "processed" / f"connectomes_scale-{scale}.npz")
     return np.asarray(data["adjacency"], dtype=float)
 
 

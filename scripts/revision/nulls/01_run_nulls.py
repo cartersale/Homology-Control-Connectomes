@@ -5,14 +5,15 @@ One job = (null type, scale, subject). "real" jobs analyze the empirical connect
 the primary random sets. Each null job generates N_NULLS networks, saves them
 (upper triangle, float32) and, per network, recomputes the strength ranking (and cycle
 participation at CYCLE_SCALES), draws fresh random sets, and evaluates every
-c in C_VALUES both fixed and gap-matched. Chunks are written per job, so the run resumes.
+c in C_VALUES both fixed and gap-matched. Chunks are written per job, so the run resumes
+(an interrupted stage stays "running" in the manifest, so re-running needs no --overwrite).
 
-Outputs (results/revision/nulls/):
+Outputs (runs/<name>/revision/nulls/; choose the run with ``--run <name>``):
   chunks/{null}/scale-{N}/sub-XXX_{network,sets}.csv.gz
   networks/{null}/scale-{N}/sub-XXX.npz        (triu float32, shape (N_NULLS, N(N-1)/2))
 
 Usage:
-  python 01_run_nulls.py --nulls real strength --scales 68 114 219 --n-jobs 12
+  python 01_run_nulls.py --run main --nulls real strength --scales 68 114 219 --n-jobs 12
 """
 
 from __future__ import annotations
@@ -20,6 +21,7 @@ from __future__ import annotations
 import argparse
 import os
 import time
+from pathlib import Path
 
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
@@ -30,11 +32,10 @@ import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 
-from _common import (
+from nulls_common import (
     CYCLE_SCALES,
     N_NULLS,
     N_SUBJECTS,
-    OUT_DIR,
     SCALES,
     Spectral,
     analyze_network,
@@ -42,8 +43,14 @@ from _common import (
     load_stack,
     make_null,
     null_seed,
+    out_dir,
     rich_club_level,
 )
+from hoc.runs import RunContext, add_run_arguments, partial_stage
+from hoc.utils import n_jobs
+
+ROOT: Path  # run directory (runs/<name>/), set in main()
+OUT_DIR: Path  # <run>/revision/nulls, set in main()
 
 
 def chunk_paths(null: str, scale: int, subject: int):
@@ -53,11 +60,12 @@ def chunk_paths(null: str, scale: int, subject: int):
 
 def run_job(null: str, scale: int, subject: int, n_nulls: int) -> str:
     net_path, set_path = chunk_paths(null, scale, subject)
+    # resume: chunks finished by an earlier (interrupted) run in this run directory are reused
     if net_path.exists() and set_path.exists():
         return f"skip {null} {scale} {subject}"
     t0 = time.time()
-    real = load_stack(scale)[subject]
-    dist = centroid_distances(scale)
+    real = load_stack(scale, ROOT)[subject]
+    dist = centroid_distances(scale, ROOT)
     real_gap = Spectral(real).gap
     level = rich_club_level(real)
     with_cycle = scale in CYCLE_SCALES
@@ -92,8 +100,23 @@ def main():
     ap.add_argument("--scales", nargs="+", type=int, default=list(SCALES))
     ap.add_argument("--subjects", type=int, default=N_SUBJECTS, help="first n subjects")
     ap.add_argument("--n-nulls", type=int, default=N_NULLS)
-    ap.add_argument("--n-jobs", type=int, default=12)
+    ap.add_argument("--n-jobs", type=int, default=n_jobs(12))
+    add_run_arguments(ap)
     args = ap.parse_args()
+    global ROOT, OUT_DIR
+    stage = partial_stage(
+        "revision/nulls/01_run_nulls",
+        nulls=(args.nulls, ["real", "strength", "geometric", "weights"]),
+        scales=(args.scales, list(SCALES)),
+        subjects=(args.subjects, N_SUBJECTS),
+        n_nulls=(args.n_nulls, N_NULLS),
+    )
+    ctx = RunContext.from_args(stage, args, config_path="config/default.toml")
+    ctx.require_stage("00_prepare_data")
+    ctx.require_stage("revision/spectra/01_compute_spectra")
+    ctx.begin()
+    ROOT = ctx.root
+    OUT_DIR = out_dir(ROOT)
 
     # biggest jobs first for better load balance
     jobs = [(null, scale, subj) for null in args.nulls for scale in sorted(args.scales, reverse=True) for subj in range(args.subjects)]
@@ -102,6 +125,7 @@ def main():
         delayed(run_job)(null, scale, subj, args.n_nulls) for null, scale, subj in jobs
     ):
         print(time.strftime("%H:%M:%S"), msg, flush=True)
+    ctx.finish()
 
 
 if __name__ == "__main__":

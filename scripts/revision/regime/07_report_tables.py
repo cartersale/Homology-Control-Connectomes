@@ -1,12 +1,24 @@
-"""Generate markdown tables for REPORT.md from the regime CSV outputs -> results/revision/regime/report_tables.md
-Also writes task1_signflip_per_k.csv and task1_csweep_per_k.csv.
+"""Generate markdown tables for REPORT.md from the regime CSV outputs -> <run>/revision/regime/report_tables.md
+Also writes task1_signflip_per_k.csv and task1_csweep_per_k.csv. <run> = runs/<name>/ (choose it with ``--run <name>``).
 """
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
 
-from _common import OUT_DIR, holm, paired_stats
+from regime_common import holm, out_dir, paired_stats
+from hoc.runs import stage_from_argv
+
+ctx = stage_from_argv("revision/regime/07_report_tables")
+ctx.require_stage("revision/regime/01_csweep_perron")
+ctx.require_stage("revision/regime/02_nctpy_equivalence")
+ctx.require_stage("revision/regime/03_horizon_eps_largek")
+ctx.require_stage("revision/regime/04_energy_floor")
+ctx.require_stage("revision/regime/05_summarize_csweep")
+ctx.require_stage("revision/regime/06_perron_diagnostic")
+ctx.begin()
+ROOT = ctx.root
+OUT_DIR = out_dir(ROOT)
 
 S = (68, 114, 219)
 out = []
@@ -186,3 +198,4 @@ out.append("### T6-landscape-per-k\n\n" + md(gk.round(4)))
 
 (OUT_DIR / "report_tables.md").write_text("\n\n".join(out) + "\n")
 print("written")
+ctx.finish()

@@ -12,7 +12,7 @@ Spearman rho given L_S (and given L_S plus the other predictor). Ranks are resid
 covariates' ranks (OLS) and the residuals correlated. Per subject the rho's are averaged over k.
 Head-to-head: paired Wilcoxon across subjects of |rho_comm| - |rho_geo| (partial given L_S).
 
-Outputs: results/revision/q1/redundancy_rho.csv (per subject x scale x c x k), redundancy_summary.csv
+Outputs (runs/<name>/revision/q1/; choose the run with ``--run <name>``): redundancy_rho.csv (per subject x scale x c x k), redundancy_summary.csv
 """
 
 from __future__ import annotations
@@ -29,10 +29,15 @@ from joblib import Parallel, delayed
 from scipy.sparse.csgraph import shortest_path
 from scipy.stats import wilcoxon
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "nulls"))
-from _common import REPO_ROOT, Spectral, load_stack  # noqa: E402
+NULLS_DIR = Path(__file__).resolve().parents[1] / "nulls"  # shared helpers: nulls/nulls_common.py
+if str(NULLS_DIR) not in sys.path:
+    sys.path.insert(0, str(NULLS_DIR))
+from nulls_common import Spectral, load_stack  # noqa: E402
+from hoc.runs import stage_from_argv  # noqa: E402
+from hoc.utils import n_jobs  # noqa: E402
 
-OUT = REPO_ROOT / "results" / "revision" / "q1"
+ROOT: Path  # run directory (runs/<name>/), set in main()
+OUT: Path  # <run>/revision/q1, set in main()
 SCALES = (68, 114, 219)
 C_VALUES = (0.01, 0.1, 1.0)
 K_VALUES = (2, 3, 5)
@@ -100,14 +105,21 @@ def job(scale: int, si: int, A: np.ndarray, sets: pd.DataFrame) -> list[dict]:
 
 
 def main():
+    global ROOT, OUT
+    ctx = stage_from_argv("revision/q1/04_redundancy_geodesic")
+    ctx.require_stage("00_prepare_data")
+    ctx.require_stage("revision/q1/01_compute_q1")
+    ctx.begin()
+    ROOT = ctx.root
+    OUT = ROOT / "revision" / "q1"
     df = pd.read_csv(OUT / "set_q1.csv.gz", usecols=["subject_id", "scale", "c", "k", "family", "nodes", "q1", "loading"])
     df = df[~df["family"].str.endswith("matched") & df["k"].isin(K_VALUES)]
     rows = []
     for scale in SCALES:
-        stack = load_stack(scale)
+        stack = load_stack(scale, ROOT)
         sub = df[df["scale"] == scale]
         groups = {sid: g for sid, g in sub.groupby("subject_id")}
-        out = Parallel(n_jobs=12)(delayed(job)(scale, si, stack[si], groups[f"sub-{si:03d}"]) for si in range(stack.shape[0]))
+        out = Parallel(n_jobs=n_jobs(12))(delayed(job)(scale, si, stack[si], groups[f"sub-{si:03d}"]) for si in range(stack.shape[0]))
         rows += [r for o in out for r in o]
         print(scale, "done", flush=True)
     res = pd.DataFrame(rows)
@@ -133,6 +145,7 @@ def main():
     show = ["scale", "c", "rho_L", "rho_geo_inv", "rho_geo_log", "rho_comm", "prho_geo_inv|L", "prho_geo_log|L", "prho_comm|L",
             "prho_comm|L,geo_inv", "prho_geo_inv|L,comm", "comm_minus_geo_inv_given_L", "n_comm_better_geo_inv_given_L", "p_comm_vs_geo_inv_given_L", "rho_geo_inv_comm"]
     print(summ[show].round(3).to_string(index=False))
+    ctx.finish()
 
 
 if __name__ == "__main__":

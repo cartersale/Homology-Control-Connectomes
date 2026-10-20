@@ -18,13 +18,14 @@ A2  Mediators that do not reuse the degree driver set (top-k strength nodes). Co
     two outcomes: degree-set q1 (fixed c = 0.1; k = avg and each k) and the spectral gap itself.
 A3  Summary numbers for the Abstract and Fig 5 -> gap_summary.md.
 
-Outputs (results/revision/nulls/): gap_split.csv, mediators_network.csv.gz,
+Outputs (runs/<name>/revision/nulls/; choose the run with ``--run <name>``): gap_split.csv, mediators_network.csv.gz,
 mediation_noncircular.csv, gap_summary.md
 """
 
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 
@@ -35,7 +36,12 @@ import statsmodels.formula.api as smf
 from joblib import Parallel, delayed
 from scipy.stats import spearmanr, wilcoxon
 
-from _common import NULL_TYPES, OUT_DIR, SCALES, load_stack, rich_club
+from nulls_common import NULL_TYPES, SCALES, load_stack, out_dir, rich_club
+from hoc.runs import stage_from_argv
+from hoc.utils import n_jobs
+
+ROOT: Path  # run directory (runs/<name>/), set in main()
+OUT_DIR: Path  # <run>/revision/nulls, set in main()
 
 TOP_DEGREE_FRAC = 0.20
 RC_PERCENTILES = (75, 85, 95)
@@ -65,7 +71,7 @@ def mediator_stats(A: np.ndarray, real_degree: np.ndarray) -> dict:
 
 
 def job(null: str, scale: int, subject: int) -> list[dict]:
-    real = load_stack(scale)[subject]
+    real = load_stack(scale, ROOT)[subject]
     real_degree = np.count_nonzero(real, axis=0)
     ids = {"null": null, "scale": scale, "subject_id": f"sub-{subject:03d}"}
     if null == "real":
@@ -140,6 +146,14 @@ def mediation(frame: pd.DataFrame, outcome: str, mediators: list[str], keys: dic
 
 
 def main():
+    global ROOT, OUT_DIR
+    ctx = stage_from_argv("revision/nulls/03_gap_mediators")
+    ctx.require_stage("00_prepare_data")
+    ctx.require_stage("revision/nulls/01_run_nulls")
+    ctx.require_stage("revision/nulls/02_analyze")
+    ctx.begin()
+    ROOT = ctx.root
+    OUT_DIR = out_dir(ROOT)
     net = pd.read_csv(OUT_DIR / "networks.csv.gz")
 
     # A1
@@ -149,11 +163,11 @@ def main():
 
     # A2: new mediators on all networks
     path = OUT_DIR / "mediators_network.csv.gz"
-    if path.exists():
+    if path.exists():  # cache: reuse mediators computed by an earlier run in this run directory
         med_net = pd.read_csv(path)
     else:
         jobs = [(n, s, i) for n in ("real",) + NULL_TYPES for s in SCALES for i in range(70)]
-        out = Parallel(n_jobs=12)(delayed(job)(*j) for j in jobs)
+        out = Parallel(n_jobs=n_jobs(12))(delayed(job)(*j) for j in jobs)
         med_net = pd.DataFrame([r for rows in out for r in rows])
         med_net.to_csv(path, index=False)
     full = net.merge(med_net, on=["null", "null_index", "scale", "subject_id"])
@@ -196,6 +210,7 @@ def main():
     (OUT_DIR / "gap_summary.md").write_text("\n".join(lines))
     print(piv.round(2).to_string())
     print(contrast.pivot_table(index="stat", columns=["null", "scale"], values="z_median").round(2).to_string())
+    ctx.finish()
 
 
 if __name__ == "__main__":

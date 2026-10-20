@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Tables for P1-P3 from results/revision/q1/set_q1.csv.gz.
+"""Tables for P1-P3 from runs/<name>/revision/q1/set_q1.csv.gz (choose the run with ``--run <name>``).
 
 P1  every criterion vs its subject's 100 random sets: mean difference from the random mean,
     mean percentile among random sets, subjects above the random mean, Wilcoxon on the
@@ -19,9 +19,14 @@ import pandas as pd
 from scipy.stats import wilcoxon
 from statsmodels.stats.multitest import multipletests
 
+import sys
 from pathlib import Path
 
-OUT = Path(__file__).resolve().parents[3] / "results" / "revision" / "q1"
+REPO_ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(REPO_ROOT / "src"))
+from hoc.runs import stage_from_argv  # noqa: E402
+
+OUT: Path  # <run>/revision/q1, set in main()
 METRICS = ["q1", "er", "pr", "q1_perp", "er_perp", "pr_perp", "loading", "perron_share"]
 CRITERIA = [
     "degree_strength", "eigenvector_centrality", "top_avg_ctrl", "betweenness", "participation_coefficient",
@@ -156,6 +161,11 @@ def fmt3(df, value, label_cols, extra=None):
 
 
 def main():
+    global OUT
+    ctx = stage_from_argv("revision/q1/02_tables")
+    ctx.require_stage("revision/q1/01_compute_q1")
+    ctx.begin()
+    OUT = ctx.root / "revision" / "q1"
     df = pd.read_csv(OUT / "set_q1.csv.gz")
     assert np.isfinite(df[METRICS].to_numpy()).all(), "non-finite metrics"
     named, rmean, pct, matched = per_k_frames(df)
@@ -190,6 +200,7 @@ def main():
         L.append("")
     (OUT / "tables.md").write_text("\n".join(L))
     print("\n".join(L))
+    ctx.finish()
 
 
 if __name__ == "__main__":

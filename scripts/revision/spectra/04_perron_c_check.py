@@ -4,7 +4,8 @@
 Sets: static top-k of the 9 saved rankings + the 100 primary random sets (same seeds).
 For each set: ER, PR, Perron loading sum_{i in S} v_i^2 (v = leading eigvec of A0), and the
 Perron share of the Gramian, v^T W v / tr W (fraction of controllability variance along the
-slowest mode). Writes results/revision/spectra/perron_c_check.csv and tables/t4b_perron_by_c.csv.
+slowest mode). Writes runs/<name>/revision/spectra/perron_c_check.csv and tables/t4b_perron_by_c.csv
+(choose the run with ``--run <name>``).
 """
 
 from __future__ import annotations
@@ -23,9 +24,11 @@ from hoc.config import load_config  # noqa: E402
 from hoc.control import assemble_gramian, gramian_metrics, single_node_gramians  # noqa: E402
 from hoc.preprocessing import stabilize_adjacency  # noqa: E402
 from hoc.rankings import random_top_k_nodes, top_k_nodes  # noqa: E402
-from hoc.utils import make_rng, subject_seed  # noqa: E402
+from hoc.runs import stage_from_argv  # noqa: E402
+from hoc.utils import make_rng, n_jobs, subject_seed  # noqa: E402
 
-OUT = REPO_ROOT / "results" / "revision" / "spectra"
+STAGE = "revision/spectra/04_perron_c_check"
+OUT: Path  # set in main(): <run>/revision/spectra
 CFG = load_config(REPO_ROOT / "config/default.toml")
 SEED = int(CFG["analysis"]["random_seed"])
 EPS = float(CFG["control"]["primary_epsilon"])
@@ -60,15 +63,22 @@ def run(scale, subj, adjacency, scores):
 
 
 def main():
-    ns = pd.read_csv(REPO_ROOT / "results/primary/node_scores.csv", usecols=["subject_id", "scale", "node_index", "method", "score"])
+    global OUT
+    ctx = stage_from_argv(STAGE)
+    ctx.require_stage("00_prepare_data")
+    ctx.require_stage("01_primary")
+    ctx.begin()
+    OUT = ctx.root / "revision" / "spectra"
+    (OUT / "tables").mkdir(parents=True, exist_ok=True)
+    ns = pd.read_csv(ctx.root / "primary/node_scores.csv", usecols=["subject_id", "scale", "node_index", "method", "score"])
     rows = []
     for scale in (68, 114, 219):
-        stack = np.load(REPO_ROOT / f"results/processed/connectomes_scale-{scale}.npz")["adjacency"]
+        stack = np.load(ctx.root / f"processed/connectomes_scale-{scale}.npz")["adjacency"]
         sub = ns[ns.scale == scale]
         maps = {}
         for (sid, m), g in sub.groupby(["subject_id", "method"]):
             maps.setdefault(sid, {})[m] = g.sort_values("node_index")["score"].to_numpy()
-        res = Parallel(n_jobs=12)(delayed(run)(scale, s, stack[s], {m: maps[f"sub-{s:03d}"][m] for m in METHODS}) for s in range(stack.shape[0]))
+        res = Parallel(n_jobs=n_jobs(12))(delayed(run)(scale, s, stack[s], {m: maps[f"sub-{s:03d}"][m] for m in METHODS}) for s in range(stack.shape[0]))
         for r in res:
             rows.extend(r)
         print("done", scale, flush=True)
@@ -101,6 +111,7 @@ def main():
     m = df.groupby(["c", "scale", "family"])[["effective_rank", "perron_loading", "perron_share_W"]].mean().round(3)
     m.to_csv(OUT / "tables" / "t4b_perron_by_c_family_means.csv")
     print(m.loc[(slice(None), slice(None), ["degree_strength", "cycle_participation", "random"]), :].to_string())
+    ctx.finish()
 
 
 if __name__ == "__main__":

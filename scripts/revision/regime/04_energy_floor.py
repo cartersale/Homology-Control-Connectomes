@@ -4,24 +4,29 @@ Part A (driver sets): degree / cycle / eigenvector / betweenness top-k and the 1
   eps in {1e-8, 1e-5, 1e-2}: fraction of eigenvalues at the floor (pipeline definition: eig(W) <= ~1e-8 eps,
   i.e. numerically zero), fraction of eig(W) < eps, log10 E_avg vs log10(N/eps), cycle - degree
   Delta log10 E_avg (k-averaged; Holm family 3 scales x 3 eps).
-Part B (landscape): the primary run's saved candidate sets (results/primary/landscape_samples, 5000 per
+Part B (landscape): the primary run's saved candidate sets (<run>/primary/landscape_samples, 5000 per
   subject/scale/k, or exhaustive when C(N,k) <= 5000). log10 E_avg per set at each eps; variance (ddof=1) and
   IQR across sets; same for log10 of the non-floor part (sum of 1/lambda over non-floored eigenvalues) and the
   above-eps part (sum over eig(W) > eps of 1/(lambda+eps)). Also checks recomputed eps=1e-5 energies against the
   saved average_energies.
+Outputs go to runs/<name>/revision/regime/ (choose the run with ``--run <name>``).
 """
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
 
-from _common import (K_VALUES, N_SUBJECTS, OUT_DIR, REPO_ROOT, SCALES, Spectral, holm, load_ranks, load_stack,
-                     metrics_from_eigs, paired_stats, random_sets, run_parallel)
+from pathlib import Path
+
+from regime_common import (K_VALUES, N_SUBJECTS, SCALES, Spectral, holm, load_ranks, load_stack,
+                           metrics_from_eigs, out_dir, paired_stats, random_sets, run_parallel)
+from hoc.runs import stage_from_argv
+from hoc.utils import n_jobs
 
 C = 0.1
 EPS = (1e-8, 1e-5, 1e-2)
 METHODS_A = ("degree_strength", "cycle_participation", "eigenvector_centrality", "betweenness")
-SAMPLES = REPO_ROOT / "results" / "primary" / "landscape_samples"
+SAMPLES: Path  # set in __main__: <run>/primary/landscape_samples
 
 
 def iqr(x):
@@ -79,11 +84,18 @@ def job(scale, si, ranks, adjacency):
 
 
 if __name__ == "__main__":
+    ctx = stage_from_argv("revision/regime/04_energy_floor")
+    ctx.require_stage("00_prepare_data")
+    ctx.require_stage("01_primary")
+    ctx.begin()
+    ROOT = ctx.root
+    OUT_DIR = out_dir(ROOT)
+    SAMPLES = ROOT / "primary" / "landscape_samples"
     A, B, SPEC = [], [], {}
     for scale in SCALES:
-        stack = load_stack(scale)
-        ranks = load_ranks(scale)
-        res = run_parallel(job, [(scale, i, {key: v for key, v in ranks.items() if key[0] == f"sub-{i:03d}"}, stack[i]) for i in range(N_SUBJECTS)], n_jobs=8)
+        stack = load_stack(scale, ROOT)
+        ranks = load_ranks(scale, ROOT)
+        res = run_parallel(job, [(scale, i, {key: v for key, v in ranks.items() if key[0] == f"sub-{i:03d}"}, stack[i]) for i in range(N_SUBJECTS)], n_jobs=n_jobs(8))
         for a, b, sp in res:
             A.extend(a)
             B.extend(b)
@@ -102,3 +114,4 @@ if __name__ == "__main__":
     rows = [{"scale": s, "eps": e, **paired_stats(g["d"].to_numpy())} for (s, e), g in wide.groupby(["scale", "eps"])]
     holm(pd.DataFrame(rows), None).to_csv(OUT_DIR / "task6_delta_log10E_summary.csv", index=False)
     print("max |log10E - saved| at eps=1e-5:", b["max_abs_dlog10E_vs_saved"].max())
+    ctx.finish()

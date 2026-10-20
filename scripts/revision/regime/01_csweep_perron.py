@@ -6,6 +6,7 @@ primary pipeline's 100 random sets (same seeds). Outputs
                                random mean/sd, percentile vs random (ER, PR)
   csweep_random_raw.npz        per scale: random-set ER / PR / Perron loading arrays
   csweep_spearman.csv          per subject/scale/c/k: Spearman(Perron loading, ER) and (Perron trace frac, ER) across the 109 sets
+Outputs go to runs/<name>/revision/regime/ (choose the run with ``--run <name>``).
 """
 from __future__ import annotations
 
@@ -13,8 +14,10 @@ import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
 
-from _common import (K_VALUES, METHODS, N_RANDOM, N_SUBJECTS, OUT_DIR, SCALES, Spectral, load_ranks, load_stack,
-                     metrics_from_eigs, random_sets, run_parallel)
+from regime_common import (K_VALUES, METHODS, N_RANDOM, N_SUBJECTS, SCALES, Spectral, load_ranks, load_stack,
+                           metrics_from_eigs, out_dir, random_sets, run_parallel)
+from hoc.runs import stage_from_argv
+from hoc.utils import n_jobs
 
 C_VALUES = (0.01, 0.02, 0.03, 0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.7, 1.0, 2.0)
 EPS = 1e-5
@@ -81,12 +84,18 @@ def subject_job(scale, subject_index, ranks, adjacency):
 
 
 if __name__ == "__main__":
+    ctx = stage_from_argv("revision/regime/01_csweep_perron")
+    ctx.require_stage("00_prepare_data")
+    ctx.require_stage("01_primary")
+    ctx.begin()
+    ROOT = ctx.root
+    OUT_DIR = out_dir(ROOT)
     all_rows, all_sp, raws = [], [], {}
     for scale in SCALES:
-        stack = load_stack(scale)
-        ranks = load_ranks(scale)
+        stack = load_stack(scale, ROOT)
+        ranks = load_ranks(scale, ROOT)
         jobs = [(scale, i, {key: v for key, v in ranks.items() if key[0] == f"sub-{i:03d}"}, stack[i]) for i in range(N_SUBJECTS)]
-        res = run_parallel(subject_job, jobs, n_jobs=8)
+        res = run_parallel(subject_job, jobs, n_jobs=n_jobs(8))
         for r, s, raw in res:
             all_rows.extend(r)
             all_sp.extend(s)
@@ -95,3 +104,4 @@ if __name__ == "__main__":
     pd.DataFrame(all_rows).to_csv(OUT_DIR / "csweep_sets_methods.csv", index=False)
     pd.DataFrame(all_sp).to_csv(OUT_DIR / "csweep_spearman.csv", index=False)
     np.savez_compressed(OUT_DIR / "csweep_random_raw.npz", c_values=np.array(C_VALUES), k_values=np.array(K_VALUES), **raws)
+    ctx.finish()

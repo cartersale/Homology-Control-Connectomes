@@ -1,9 +1,18 @@
 #!/usr/bin/env python
-"""Manim scene for the reachable-state cloud built from real control results."""
+"""Manim scene for the reachable-state cloud built from real control results.
+
+Reads the assets written by scripts/08_make_reachable_state_cloud_assets.py from
+<run>/figures/animation_assets/. Manim parses its own command line, so the run is
+chosen with the environment variable $HOC_RUN (default "main"; HOC_RUN=results
+uses the assets derived from the legacy tree, i.e. runs/results-derived/...):
+
+    HOC_RUN=<name> manim -qh scripts/09_reachable_state_cloud_scene.py ReachableStateCloudScene
+"""
 
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -32,7 +41,12 @@ from manim import (
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-ASSET_DIR = REPO_ROOT / "figures" / "animation_assets"
+SRC_ROOT = REPO_ROOT / "src"
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
+
+from hoc.runs import resolve_run_dir, writable_root
+
 DEFAULT_STEM = "reachable_state_cloud_scale-114_k-5_static_sub-014"
 COLORS = {
     "degree_strength": ORANGE,
@@ -45,10 +59,23 @@ TARGET_LABELS = {
 }
 
 
+def asset_dir() -> Path:
+    """<run>/figures/animation_assets for the run named by $HOC_RUN."""
+    path = writable_root(resolve_run_dir()) / "figures" / "animation_assets"
+    if not path.exists():
+        raise FileNotFoundError(
+            f"{path} does not exist. Run scripts/08_make_reachable_state_cloud_assets.py for this run "
+            "first, or set $HOC_RUN to the run that has the assets."
+        )
+    return path
+
+
 def load_assets(stem: str = DEFAULT_STEM) -> tuple[dict, np.lib.npyio.NpzFile]:
-    with open(ASSET_DIR / f"{stem}.json", "r", encoding="utf-8") as handle:
+    directory = asset_dir()
+    with open(directory / f"{stem}.json", "r", encoding="utf-8") as handle:
+
         metadata = json.load(handle)
-    arrays = np.load(ASSET_DIR / f"{stem}.npz")
+    arrays = np.load(directory / f"{stem}.npz")
     return metadata, arrays
 
 

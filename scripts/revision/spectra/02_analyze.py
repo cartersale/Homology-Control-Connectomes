@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 """Statistics and tables for the spectra / random-baseline / matched-control revision analyses.
 
-Reads results/revision/spectra/set_metrics.csv (from 01_compute_spectra.py) and writes
-CSV + Markdown tables into results/revision/spectra/tables/.
+Reads <run>/revision/spectra/set_metrics.csv (from 01_compute_spectra.py) and writes
+CSV + Markdown tables into <run>/revision/spectra/tables/, where <run> = runs/<name>/
+(choose it with ``--run <name>``).
 
 Statistics convention (every subject-level comparison, n = 70 subjects):
   subject value = mean over k of the per-(subject, k) paired difference;
@@ -24,9 +25,11 @@ from statsmodels.stats.multitest import multipletests
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 from hoc.config import load_config  # noqa: E402
+from hoc.runs import stage_from_argv  # noqa: E402
 
-OUT = REPO_ROOT / "results" / "revision" / "spectra"
-TAB = OUT / "tables"
+STAGE = "revision/spectra/02_analyze"
+OUT: Path  # set in main(): <run>/revision/spectra
+TAB: Path  # set in main(): OUT / "tables"
 CFG = load_config(REPO_ROOT / "config/default.toml")
 SEED = int(CFG["analysis"]["random_seed"])
 EPS = float(CFG["control"]["primary_epsilon"])
@@ -118,6 +121,12 @@ def stat_cells(s: dict) -> dict:
 
 
 def main() -> None:
+    global OUT, TAB
+    ctx = stage_from_argv(STAGE)
+    ctx.require_stage("revision/spectra/01_compute_spectra")
+    ctx.begin()
+    OUT = ctx.root / "revision" / "spectra"
+    TAB = OUT / "tables"
     TAB.mkdir(parents=True, exist_ok=True)
     df = pd.read_csv(OUT / "set_metrics.csv")
     md: list[str] = []
@@ -420,6 +429,7 @@ def main() -> None:
 
     (TAB / "all_tables.md").write_text("\n".join(md) + "\n")
     print("\n".join(md))
+    ctx.finish()
 
 
 if __name__ == "__main__":

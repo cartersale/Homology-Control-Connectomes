@@ -24,6 +24,10 @@ the Gramian of driver set S in the eigenbasis is G_S = K o (U_S^T U_S),
 K_ab = -1/(mu_a + mu_b), and eig(W_S) = eig(G_S). The Perron mode is the last
 eigenvector, so W_perp = P W P with P = I - v1 v1^T has spectrum eig(G_S[:-1, :-1])
 (plus a zero). Validated against hoc.control in 00_validate.py.
+
+Imported (not run) by the nulls, q1 and mechanism scripts. Paths are relative to a run
+directory ``root`` (``ctx.root`` of the calling script, i.e. runs/<name>/, chosen with
+``--run <name>``), which every loader takes explicitly.
 """
 
 from __future__ import annotations
@@ -47,7 +51,6 @@ if str(SRC_ROOT) not in sys.path:
 from hoc.rankings import random_top_k_nodes, top_k_nodes  # noqa: E402
 from hoc.utils import make_rng, subject_seed  # noqa: E402
 
-OUT_DIR = REPO_ROOT / "results" / "revision" / "nulls"
 BASE_SEED = 20260423
 SCALES = (68, 114, 219)
 K_VALUES = (1, 2, 3, 5)
@@ -68,12 +71,20 @@ GEO_SWAPS_PER_EDGE = 10
 # ----------------------------------------------------------------------------- data
 
 
-def load_stack(scale: int) -> np.ndarray:
-    return np.load(REPO_ROOT / "results" / "processed" / f"connectomes_scale-{scale}.npz")["adjacency"]
+def out_dir(root: Path) -> Path:
+    """Null-analysis output folder of a run (``<root>/revision/nulls``), created on demand."""
+    path = Path(root) / "revision" / "nulls"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
 
 
-def centroid_distances(scale: int) -> np.ndarray:
-    xyz = pd.read_csv(REPO_ROOT / "results" / "revision" / "spectra" / f"centroids_scale-{scale}.csv")[["x", "y", "z"]].to_numpy()
+def load_stack(scale: int, root: Path) -> np.ndarray:
+    return np.load(Path(root) / "processed" / f"connectomes_scale-{scale}.npz")["adjacency"]
+
+
+def centroid_distances(scale: int, root: Path) -> np.ndarray:
+    """Needs revision/spectra/01_compute_spectra (parcel centroids) in the run."""
+    xyz = pd.read_csv(Path(root) / "revision" / "spectra" / f"centroids_scale-{scale}.csv")[["x", "y", "z"]].to_numpy()
     return cdist(xyz, xyz)
 
 

@@ -26,3 +26,11 @@ def write_json(path: str | Path, payload: dict) -> None:
     output = Path(path)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(payload, indent=2, sort_keys=True))
+
+
+def n_jobs(default: int = -1) -> int:
+    """Worker count for parallel loops: ``$HOC_N_JOBS`` if set, else ``default``."""
+    import os
+
+    value = os.environ.get("HOC_N_JOBS")
+    return int(value) if value else int(default)

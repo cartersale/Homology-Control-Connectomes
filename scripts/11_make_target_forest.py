@@ -4,11 +4,16 @@
 Targets on the x-axis, cycle-minus-degree percent energy difference on the y-axis, with
 one point per parcellation scale (68/114/219). Uses the corrected (Margulies-gradient)
 target-energy statistics.
+
+Usage: python scripts/11_make_target_forest.py [--run <name>]
+(default $HOC_RUN or "main"; ``--run results`` reads the legacy tree, with the
+figure written to runs/results-derived/figures/).
 """
 
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
 os.environ.setdefault("MPLCONFIGDIR", "/private/tmp/matplotlib")
@@ -19,8 +24,11 @@ import pandas as pd
 from matplotlib.lines import Line2D
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-FIGURES_DIR = REPO_ROOT / "figures"
-FIGURES_DIR.mkdir(exist_ok=True)
+SRC_ROOT = REPO_ROOT / "src"
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
+
+from hoc.runs import figures_dir, reader_run_dir
 
 SCALE_COLORS = {68: "#4C72B0", 114: "#55A868", 219: "#C44E52"}
 SCALES = [68, 114, 219]
@@ -43,7 +51,9 @@ def stars(p_holm: float, reject: bool) -> str:
 
 
 def main() -> None:
-    summary = pd.read_csv(REPO_ROOT / "results" / "statistics" / "target_named_summary.csv")
+    run_dir = reader_run_dir()
+    figures = figures_dir(run_dir)
+    summary = pd.read_csv(run_dir / "statistics" / "target_named_summary.csv")
     summary = summary[summary["metric"] == "pct_cycle_minus_degree"]
 
     fig, ax = plt.subplots(figsize=(8.4, 3.4))
@@ -78,7 +88,8 @@ def main() -> None:
               frameon=False, loc="upper right", ncol=3, columnspacing=1.0, handletextpad=0.3)
     fig.tight_layout()
     for suffix in ("svg", "png"):
-        fig.savefig(FIGURES_DIR / f"target_forest_combined.{suffix}", dpi=300, bbox_inches="tight", facecolor="white")
+        fig.savefig(figures / f"target_forest_combined.{suffix}"
+, dpi=300, bbox_inches="tight", facecolor="white")
     plt.close(fig)
 
 

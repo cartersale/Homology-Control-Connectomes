@@ -1,5 +1,9 @@
 #!/usr/bin/env python
-"""Statistics, tables and draft figure for the reciprocal hub-lesion analysis."""
+"""Statistics, tables and draft figure for the reciprocal hub-lesion analysis.
+
+Run: python scripts/revision/lesion/02_analyze_reciprocal_lesion.py --run <name> [--overwrite]
+Reads and writes runs/<name>/revision/lesion/ (after 01_run_reciprocal_lesion.py).
+"""
 
 from __future__ import annotations
 
@@ -16,7 +20,8 @@ import pandas as pd  # noqa: E402
 from scipy.stats import rankdata, spearmanr, wilcoxon  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from lesion_core import OUT_DIR  # noqa: E402
+from lesion_core import STAGE_PREFIX, out_dir  # noqa: E402
+from hoc.runs import RunContext, add_run_arguments  # noqa: E402
 
 LESIONS = ["degree", "cycle", "random"]
 STRATS = ["degree_strength", "cycle_participation"]
@@ -139,9 +144,17 @@ def md_table(df: pd.DataFrame, cols: list[str], floatfmt: str = "{:.3f}") -> str
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--rows", default=str(OUT_DIR / "lesion_rows.csv.gz"))
-    parser.add_argument("--out", default=str(OUT_DIR))
+    parser.add_argument("--rows", default=None, help="default: <run>/revision/lesion/lesion_rows.csv.gz")
+    parser.add_argument("--out", default=None, help="default: <run>/revision/lesion/")
+    add_run_arguments(parser)
     args = parser.parse_args()
+    ctx = RunContext.from_args(STAGE_PREFIX + Path(__file__).stem, args, config_path="config/default.toml")
+    ctx.require_stage(STAGE_PREFIX + "01_run_reciprocal_lesion")
+    ctx.begin()
+    if args.rows is None:
+        args.rows = str(out_dir(ctx.root) / "lesion_rows.csv.gz")
+    if args.out is None:
+        args.out = str(out_dir(ctx.root))
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(RNG_SEED)
@@ -243,6 +256,7 @@ def main() -> None:
         for key, val in snippets.items():
             fh.write(f"### {key}\n\n{val}\n\n")
     print(open(out / "report_snippets.md").read()[:3000])
+    ctx.finish()
 
 
 def make_figure(ps: pd.DataFrame, cross: pd.DataFrame, energy: pd.DataFrame, path: Path) -> None:

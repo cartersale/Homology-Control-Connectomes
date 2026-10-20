@@ -2,6 +2,7 @@
 driver strength is held fixed? Per subject x scale x k in {1,2,3,5} x c in {0.01, 0.1, 1.0}, across the 100
 random sets + 9 ranking sets: Spearman(ER, summed driver strength), Spearman(ER, Perron loading), and the
 partial Spearman(ER, Perron loading | summed strength) (rank-residualized). Output: task3_perron_diagnostic.csv
+Outputs go to runs/<name>/revision/regime/ (choose the run with ``--run <name>``).
 """
 from __future__ import annotations
 
@@ -9,8 +10,10 @@ import numpy as np
 import pandas as pd
 from scipy.stats import rankdata, spearmanr
 
-from _common import (K_VALUES, METHODS, N_SUBJECTS, OUT_DIR, SCALES, Spectral, load_ranks, load_stack, metrics_from_eigs,
-                     random_sets, run_parallel)
+from regime_common import (K_VALUES, METHODS, N_SUBJECTS, SCALES, Spectral, load_ranks, load_stack, metrics_from_eigs,
+                           out_dir, random_sets, run_parallel)
+from hoc.runs import stage_from_argv
+from hoc.utils import n_jobs
 
 
 def partial_spearman(x, y, z):
@@ -39,12 +42,19 @@ def job(scale, si, ranks, A0):
 
 
 if __name__ == "__main__":
+    ctx = stage_from_argv("revision/regime/06_perron_diagnostic")
+    ctx.require_stage("00_prepare_data")
+    ctx.require_stage("01_primary")
+    ctx.begin()
+    ROOT = ctx.root
+    OUT_DIR = out_dir(ROOT)
     out = []
     for scale in SCALES:
-        stack = load_stack(scale); ranks = load_ranks(scale)
-        for r in run_parallel(job, [(scale, i, {kk: v for kk, v in ranks.items() if kk[0] == f"sub-{i:03d}"}, stack[i]) for i in range(N_SUBJECTS)], n_jobs=8):
+        stack = load_stack(scale, ROOT); ranks = load_ranks(scale, ROOT)
+        for r in run_parallel(job, [(scale, i, {kk: v for kk, v in ranks.items() if kk[0] == f"sub-{i:03d}"}, stack[i]) for i in range(N_SUBJECTS)], n_jobs=n_jobs(8)):
             out.extend(r)
     d = pd.DataFrame(out)
     d.to_csv(OUT_DIR / "task3_perron_diagnostic.csv", index=False)
     pd.set_option("display.width", 200)
     print(d.groupby(["scale", "c", "k"])[["rho_er_strength", "rho_er_perron", "partial_rho_er_perron_given_strength", "rho_perron_strength"]].median().round(2))
+    ctx.finish()

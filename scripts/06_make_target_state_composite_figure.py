@@ -1,5 +1,14 @@
 #!/usr/bin/env python
-"""Build composite target-state energy figures across the target-spread axis."""
+"""Build composite target-state energy figures across the target-spread axis.
+
+Usage: python scripts/06_make_target_state_composite_figure.py [--run <name>] [--scale all] ...
+
+Reads statistics/, primary/ and processed/ from the run directory (``--run``,
+default $HOC_RUN or "main"; ``--run results`` reads the legacy tree; a config
+with ``[run] variant`` reads that variant's folder). Figures go to
+<run>/figures/section_target_state_selection/ (runs/results-derived/... for the
+legacy tree).
+"""
 
 from __future__ import annotations
 
@@ -26,6 +35,22 @@ if str(SRC_ROOT) not in sys.path:
 
 from hoc.atlas import EXCLUDED_LABELS, SCALE_TO_RESOLUTION, build_label_table
 from hoc.config import load_config
+from hoc.runs import config_variant, figures_dir, resolve_run_dir
+
+# Run directory being read; set once in main().
+RUN_DIR: Path | None = None
+
+
+def run_dir() -> Path:
+    """Run directory selected on the command line."""
+    if RUN_DIR is None:
+        raise RuntimeError("RUN_DIR is not set; call main().")
+    return RUN_DIR
+
+
+def section_dir(*parts: str) -> Path:
+    """Figure folder under <run>/figures/section_target_state_selection/."""
+    return figures_dir(run_dir(), "section_target_state_selection", *parts)
 
 
 SCALES = (68, 114, 219)
@@ -94,6 +119,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--old-style", action="store_true", help="Export the older violin-plus-forest summary as separate SVG panels.")
     parser.add_argument("--include-per-k", action="store_true", help="Also export per-k supplementary panels.")
     parser.add_argument("--include-subcortical", action="store_true", help="Also export subcortical baseline panels if present.")
+    parser.add_argument(
+        "--run",
+        default=None,
+        help="Run name under runs/ (default: $HOC_RUN or 'main'; 'results' = legacy tree, read-only).",
+    )
     return parser.parse_args()
 
 
@@ -116,7 +146,7 @@ def require_csv(path: Path) -> pd.DataFrame:
 
 def load_results(config: dict) -> dict[str, pd.DataFrame]:
     """Load the redesigned target-state result tables."""
-    results_root = REPO_ROOT / config["paths"]["results_dir"]
+    results_root = run_dir()
     stats_root = results_root / "statistics"
     return {
         "subject": require_csv(stats_root / "target_subject_differences.csv"),
@@ -130,7 +160,7 @@ def load_results(config: dict) -> dict[str, pd.DataFrame]:
 
 def load_targets(config: dict, scale: int) -> dict[str, np.ndarray]:
     """Load saved target vectors for one scale."""
-    path = REPO_ROOT / config["paths"]["results_dir"] / "processed" / f"targets_scale-{scale}.npz"
+    path = run_dir() / "processed" / f"targets_scale-{scale}.npz"
     if not path.exists():
         raise FileNotFoundError(f"Missing {path}. Rerun `python scripts/01_run_primary_analysis.py` first.")
     archive = np.load(path)
@@ -608,8 +638,7 @@ def make_composite_figure(config: dict, results: dict[str, pd.DataFrame], scale:
     ax_distributed.set_xlabel("Cycle - degree energy (%)", fontsize=9)
 
     fig.suptitle(f"Target-state energy across the concentrated-distributed axis | {scale} regions", fontsize=11, y=0.982)
-    out_dir = REPO_ROOT / config["paths"]["figures_dir"] / "section_target_state_selection"
-    out_dir.mkdir(parents=True, exist_ok=True)
+    out_dir = section_dir()
     output = out_dir / (output_name or f"target_state_axis_composite_scale-{scale}.svg")
     fig.savefig(output, bbox_inches="tight", facecolor="white", dpi=185)
     plt.close(fig)
@@ -641,8 +670,7 @@ def make_stats_only_figure(config: dict, results: dict[str, pd.DataFrame], scale
     ax_distributed.set_xlabel("Cycle - degree energy (%)", fontsize=9)
 
     fig.suptitle(f"Target-state energy | {scale} regions", fontsize=10.5)
-    out_dir = REPO_ROOT / config["paths"]["figures_dir"] / "section_target_state_selection"
-    out_dir.mkdir(parents=True, exist_ok=True)
+    out_dir = section_dir()
     output = out_dir / f"target_state_axis_stats_scale-{scale}.svg"
     fig.savefig(output, bbox_inches="tight", facecolor="white")
     plt.close(fig)
@@ -651,14 +679,7 @@ def make_stats_only_figure(config: dict, results: dict[str, pd.DataFrame], scale
 
 def piece_output_dir(config: dict, scale: int) -> Path:
     """Directory for manually assembled figure pieces."""
-    out_dir = (
-        REPO_ROOT
-        / config["paths"]["figures_dir"]
-        / "section_target_state_selection"
-        / f"target_state_axis_pieces_scale-{scale}"
-    )
-    out_dir.mkdir(parents=True, exist_ok=True)
-    return out_dir
+    return section_dir(f"target_state_axis_pieces_scale-{scale}")
 
 
 def make_surface_heatmap_piece(config: dict, results: dict[str, pd.DataFrame], scale: int) -> Path:
@@ -747,9 +768,7 @@ def make_piece_figures(config: dict, results: dict[str, pd.DataFrame], scale: in
 
 def old_style_output_dir(config: dict) -> Path:
     """Directory for old-style percent summary panels."""
-    out_dir = REPO_ROOT / config["paths"]["figures_dir"] / "section_target_state_selection" / "target_state_axis_old_style_pct"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    return out_dir
+    return section_dir("target_state_axis_old_style_pct")
 
 
 def scale_positions() -> dict[int, int]:
@@ -1017,7 +1036,7 @@ def make_per_k_figure(config: dict, results: dict[str, pd.DataFrame], scale: int
         ax.grid(axis="y", color="#d6d6d6", linewidth=0.45)
         ax.tick_params(labelsize=8)
 
-    out_dir = REPO_ROOT / config["paths"]["figures_dir"] / "section_target_state_selection"
+    out_dir = section_dir()
     output = out_dir / f"target_state_axis_per_k_scale-{scale}.svg"
     fig.savefig(output, bbox_inches="tight", facecolor="white", dpi=185)
     plt.close(fig)
@@ -1048,12 +1067,7 @@ def make_subcortical_figure(config: dict, results: dict[str, pd.DataFrame], scal
     ax.set_yticks([])
     ax.set_xlabel("Cycle - degree energy (%)")
     ax.set_title(f"Subcortical single-parcel baseline | {scale} regions", fontsize=9)
-    output = (
-        REPO_ROOT
-        / config["paths"]["figures_dir"]
-        / "section_target_state_selection"
-        / f"target_state_subcortical_baseline_scale-{scale}.svg"
-    )
+    output = section_dir() / f"target_state_subcortical_baseline_scale-{scale}.svg"
     fig.savefig(output, bbox_inches="tight", facecolor="white", dpi=185)
     plt.close(fig)
     return output
@@ -1063,7 +1077,12 @@ def main() -> None:
     """Generate requested target-state figures."""
     args = parse_args()
     config = load_config(REPO_ROOT / args.config)
+    global RUN_DIR
+    RUN_DIR = resolve_run_dir(args.run, variant=config_variant(config))
+    if not RUN_DIR.exists():
+        raise FileNotFoundError(f"Run directory {RUN_DIR} does not exist; pass --run <name> or set $HOC_RUN.")
     results = load_results(config)
+
     outputs = []
     if args.old_style:
         outputs.extend(make_old_style_pct_panels(config, results))

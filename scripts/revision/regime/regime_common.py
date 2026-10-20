@@ -7,6 +7,10 @@ a driver set S is W_S = U (K o (U_S^T U_S)) U^T with
     K_ab = (1 - exp((mu_a + mu_b) T)) / -(mu_a + mu_b) (finite horizon T)
 so eig(W_S) = eig(K o U_S^T U_S). This is validated against hoc.control in 00_validate.py.
 Metrics replicate hoc.control.gramian_metrics exactly (W + eps I, eigenvalues floored at eps).
+
+Imported (not run) by the regime and modal scripts. Paths are relative to a run directory
+``root`` (``ctx.root`` of the calling script, i.e. runs/<name>/, chosen with ``--run <name>``),
+which every loader takes explicitly.
 """
 
 from __future__ import annotations
@@ -26,10 +30,9 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from hoc.utils import make_rng, subject_seed  # noqa: E402
+from hoc.utils import n_jobs as default_n_jobs  # noqa: E402
 from hoc.rankings import random_top_k_nodes  # noqa: E402
 
-OUT_DIR = REPO_ROOT / "results" / "revision" / "regime"
-OUT_DIR.mkdir(parents=True, exist_ok=True)
 BASE_SEED = 20260423
 SCALES = (68, 114, 219)
 K_VALUES = (1, 2, 3, 5)
@@ -49,16 +52,23 @@ METHODS = (
 LARGE_K = {68: (1, 2, 3, 5, 7, 10, 14), 114: (1, 2, 3, 5, 6, 10, 11, 23), 219: (1, 2, 3, 5, 10, 11, 22, 44)}
 
 
-def load_stack(scale: int) -> np.ndarray:
-    return np.load(REPO_ROOT / "results" / "processed" / f"connectomes_scale-{scale}.npz")["adjacency"]
+def out_dir(root: Path) -> Path:
+    """Regime output folder of a run (``<root>/revision/regime``), created on demand."""
+    path = Path(root) / "revision" / "regime"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def load_stack(scale: int, root: Path) -> np.ndarray:
+    return np.load(Path(root) / "processed" / f"connectomes_scale-{scale}.npz")["adjacency"]
 
 
 _RANKS: dict[int, pd.DataFrame] = {}
 
 
-def load_ranks(scale: int) -> dict[tuple[str, str], np.ndarray]:
+def load_ranks(scale: int, root: Path) -> dict[tuple[str, str], np.ndarray]:
     """Return {(subject_id, method): node order (descending, stable)} from the saved primary node scores."""
-    table = pd.read_csv(REPO_ROOT / "results" / "primary" / "node_scores.csv", usecols=["subject_id", "scale", "node_index", "method", "rank"])
+    table = pd.read_csv(Path(root) / "primary" / "node_scores.csv", usecols=["subject_id", "scale", "node_index", "method", "rank"])
     table = table[table["scale"] == scale]
     out = {}
     for (subject_id, method), sub in table.groupby(["subject_id", "method"]):
@@ -196,8 +206,12 @@ def holm(frame: pd.DataFrame, family_cols: list[str] | None, p_col: str = "wilco
     return frame
 
 
-def run_parallel(func, jobs, n_jobs: int = 12):
+def run_parallel(func, jobs, n_jobs: int | None = None):
+    """Run ``func(*job)`` for each job; ``n_jobs`` defaults to ``$HOC_N_JOBS`` or 12."""
     os.environ.setdefault("OMP_NUM_THREADS", "1")
     from joblib import Parallel, delayed
+
+    if n_jobs is None:
+        n_jobs = default_n_jobs(12)
 
     return Parallel(n_jobs=n_jobs, verbose=0)(delayed(func)(*job) for job in jobs)

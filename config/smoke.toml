@@ -1,0 +1,86 @@
+# Synthetic smoke config: runs the whole pipeline in about a minute with no
+# downloads (see src/hoc/synthetic.py). Used by tests/test_synthetic_pipeline.py and CI.
+title = "Synthetic smoke run"
+
+[paths]
+raw_connectomes = "synthetic:subjects=4,seed=7"
+atlas_dir = "synthetic:"
+
+[analysis]
+parcellation_scales = [68]
+random_seed = 20260423
+top_k_values = [1, 3]
+larger_k_fractions = [0.05]
+save_landscape_samples = true
+
+[control]
+primary_c = 0.1
+sensitivity_c_values = [0.01, 1.0]
+primary_epsilon = 1.0e-5
+sensitivity_epsilon_values = [1.0e-8, 1.0e-5, 1.0e-2]
+finite_horizons = [1.0]
+bottom_eigenspace_dim = 5
+
+[rankings]
+primary_methods = ["degree_strength", "betweenness", "cycle_participation"]
+secondary_methods = [
+  "eigenvector_centrality",
+  "participation_coefficient",
+  "degree_normalized_cycle_participation",
+  "cycle_criticality",
+  "triangle_participation",
+  "tetrahedron_participation",
+]
+n_random_rankings = 5
+
+[landscape]
+max_enumerated_sets = 200
+near_optimal_thresholds = [0.01, 0.05, 0.10]
+greedy_candidate_pool = 25
+
+[targets]
+surface_map_top_n = 15
+sparse_frontocingulate_count = 6
+
+[weighted_inputs]
+support_sizes = [1, 2, 5, 10]
+
+[robustness]
+n_perturbations = 2
+noise_sigmas = [0.05, 0.10, 0.20]
+dropout_probabilities = [0.05, 0.10, 0.20]
+
+[hub_lesion]
+hub_counts = [5]
+methods = ["degree_strength", "cycle_participation"]
+
+[anatomy]
+# Exact Desikan-Killiany base-region names (no substring matching: "cuneus"
+# used to match "precuneus", see baseline/PROVENANCE.md).
+association_regions = [
+  "superiorfrontal", "rostralmiddlefrontal", "caudalmiddlefrontal",
+  "lateralorbitofrontal", "medialorbitofrontal", "frontalpole",
+  "superiorparietal", "inferiorparietal", "precuneus",
+  "rostralanteriorcingulate", "caudalanteriorcingulate", "posteriorcingulate",
+  "isthmuscingulate", "insula",
+]
+occipital_regions = ["cuneus", "lateraloccipital", "lingual", "pericalcarine"]
+[dong]
+aphasia_dir = "data/aphasia"
+healthy_dir = "data/healthy"
+results_subdir = "dong"
+parcellations = [100, 400]
+primary_topology_transform = "A_sym"
+topology_transforms = ["A_sym", "A_pos", "A_abs"]
+top_k_values = [1, 2, 3, 4, 5]
+random_sets = 100
+ridge = 1.0e-3
+stability_margin = 1.0e-2
+tracking_epsilon = 1.0e-5
+hub_fractions = [0.05, 0.10]
+lesion_attenuation = 0.25
+qc_min_timepoints = 50
+qc_max_missing_roi_fraction = 0.20
+qc_max_residual_covariance_condition = 1.0e8
+healthy_target_group = "older"
+aphasia_groups = ["Anomic", "Broca", "Conduction", "Global", "None"]

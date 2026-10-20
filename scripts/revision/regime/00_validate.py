@@ -39,7 +39,7 @@ for scale in SCALES:
         spec = Spectral(stack[subject_index])
         for c in (0.01, 0.1, 1.0):
             system, _ = stabilize_adjacency(stack[subject_index], c)
-            # library finite-horizon routine uses a naive O(N^4)-per-node einsum: only run it at 68
+            # the library finite-horizon routine was slow (O(N^4) per node) before #3; still only 68 here
             for horizon in ((None, 1.0, 5.0) if scale == 68 else (None,)):
                 lib = single_node_gramians(system, horizon=horizon)
                 kern = spec.kernel(c, horizon)

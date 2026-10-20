@@ -113,8 +113,8 @@ def test_target_catalog_aggregates_bilateral_landmark_subparcels(monkeypatch) ->
         frame,
         target_config={},
         anatomy_config={
-            "association_keywords": ["frontal", "parietal", "precuneus", "cingulate", "insula"],
-            "occipital_keywords": ["cuneus", "lateraloccipital", "lingual", "pericalcarine", "occipital"],
+            "association_regions": ["precentral", "precuneus", "posteriorcingulate", "rostralmiddlefrontal"],
+            "occipital_regions": ["pericalcarine", "lateraloccipital"],
         },
         atlas_dir="data/external/atlas_cache/atl-cammoun2012/fsaverage5",
     )

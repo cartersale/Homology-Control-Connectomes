@@ -26,9 +26,17 @@ def single_node_gramians(
 
     exp_at = matrix_exponential(system_matrix, horizon)
     finite_gramians = np.zeros_like(infinite_gramians)
+    # W_T = W_inf - e^{AT} W_inf e^{AT}^T. Plain matrix products: the former
+    # three-operand einsum was O(n^4) per node (hours per subject at scale 219)
+    # and agrees with this to ~1e-14 absolute.
     for node_index in range(n_nodes):
-        tail = np.einsum("ij,jk,lk->il", exp_at, infinite_gramians[node_index], exp_at)
-        finite_gramians[node_index] = 0.5 * (infinite_gramians[node_index] - tail + (infinite_gramians[node_index] - tail).T)
+        # Apple Accelerate raises spurious FP flags in matmul; check the result instead.
+        with np.errstate(all="ignore"):
+            tail = exp_at @ infinite_gramians[node_index] @ exp_at.T
+        if not np.all(np.isfinite(tail)):
+            raise FloatingPointError("non-finite finite-horizon Gramian tail")
+        difference = infinite_gramians[node_index] - tail
+        finite_gramians[node_index] = 0.5 * (difference + difference.T)
     return finite_gramians
 
 

@@ -7,20 +7,22 @@ name = "higher-order-connectomes"
 version = "0.1.0"
 description = "Control-theoretic and topological analysis pipeline for structural connectomes."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12,<3.13"
 dependencies = [
-  "bctpy",
+  "bctpy>=0.6.1,<0.7",
+  "joblib>=1.4",
+  "threadpoolctl>=3",
   "matplotlib",
-  "networkx",
+  "networkx>=3.4",
   "nibabel",
-  "neuromaps",
-  "nilearn",
+  "neuromaps==0.0.7",
+  "nilearn>=0.13",
   "notebook",
-  "numpy",
-  "pandas",
-  "persim",
-  "ripser",
-  "scipy",
+  "numpy>=2.1,<2.2",
+  "pandas>=2.2,<2.3",
+  "persim>=0.3.8",
+  "ripser==0.6.14",
+  "scipy>=1.15,<1.16",
   "seaborn",
   "statsmodels",
   "tqdm",
@@ -28,13 +30,63 @@ dependencies = [
 
 [project.optional-dependencies]
 # Second-library arm of scripts/representative_stability/
-gudhi = ["gudhi"]
+gudhi = ["gudhi==3.13.0"]
+# Everything scripts/revision/ needs (network nulls use netneurotools)
+revision = ["gudhi==3.13.0", "netneurotools==0.3.0"]
 # Manim scenes under animations/ and scripts/09_reachable_state_cloud_scene.py
 animation = ["manim"]
-dev = ["pytest"]
+dev = ["pytest>=8", "ruff>=0.6"]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.uv]
+python-preference = "only-managed"
+# Pin the lock to the versions that produced the published results
+# (baseline/environment-preprint.txt). Change these only on purpose, and
+# attach a compare_runs diff to the PR that does.
+constraint-dependencies = [
+  "bctpy==0.6.1",
+  "gudhi==3.13.0",
+  "joblib==1.4.2",
+  "matplotlib==3.10.0",
+  "netneurotools==0.3.0",
+  "networkx==3.4.2",
+  "neuromaps==0.0.7",
+  "nibabel==5.4.2",
+  "nilearn==0.13.1",
+  "numpy==2.1.3",
+  "pandas==2.2.3",
+  "persim==0.3.8",
+  "ripser==0.6.14",
+  "scikit-learn==1.6.1",
+  "scipy==1.15.2",
+  "seaborn==0.13.2",
+  "statsmodels==0.14.4",
+  "tqdm==4.67.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "scripts/representative_stability"]
+addopts = "-ra -m 'not data'"
+markers = [
+  "slow: takes more than a few seconds",
+  "data: needs the real connectome data and a finished run directory",
+]
+filterwarnings = ["ignore::DeprecationWarning:nilearn.*", "ignore::DeprecationWarning:bct.*",
+  # numpy + Apple Accelerate sets spurious FP flags in matmul (results are checked)
+  "ignore:.*encountered in matmul:RuntimeWarning",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["scripts/revision/paper/_rescued_2026-10-19", "animations"]
+
+[tool.ruff.lint]
+# Conservative: real errors only (pyflakes, syntax), plus import order.
+select = ["E9", "F", "I"]
+ignore = ["E402"]

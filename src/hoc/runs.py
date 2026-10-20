@@ -34,6 +34,7 @@ from importlib import metadata as _metadata
 from pathlib import Path
 
 from .paths import REPO_ROOT
+from .threads import THREAD_ENV_VARS, threadpool_record
 
 RUNS_ROOT_ENV = "HOC_RUNS_ROOT"
 RUN_ENV = "HOC_RUN"
@@ -58,13 +59,6 @@ TRACKED_PACKAGES = (
     "gudhi",
     "joblib",
     "matplotlib",
-)
-THREAD_ENV_VARS = (
-    "OMP_NUM_THREADS",
-    "OPENBLAS_NUM_THREADS",
-    "MKL_NUM_THREADS",
-    "VECLIB_MAXIMUM_THREADS",
-    "NUMEXPR_NUM_THREADS",
 )
 
 
@@ -190,6 +184,7 @@ def environment_record() -> dict:
         "packages": package_versions(),
         "blas": blas_info(),
         "threads": {name: os.environ.get(name) for name in THREAD_ENV_VARS},
+        "threadpools": threadpool_record(),
     }
 
 

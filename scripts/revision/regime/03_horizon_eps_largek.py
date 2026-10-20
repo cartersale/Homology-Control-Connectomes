@@ -7,14 +7,17 @@ Task 5 S1: c = 0.1 (and c = 0.01 for reproduction of the published table), infin
         eps in {1e-8..1e-2}; k-averaged ER / PR differences. Holm family: eps x scale within c and metric (21).
 Task 5 S3: c = 0.1 (and 0.01), eps = 1e-5, infinite horizon, per-k ER / PR differences (no k averaging).
         Holm family: all k x scale cells within c and metric (23).
+Outputs go to runs/<name>/revision/regime/ (choose the run with ``--run <name>``).
 """
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
 
-from _common import (K_VALUES, LARGE_K, N_SUBJECTS, OUT_DIR, SCALES, Spectral, holm, load_ranks, load_stack,
-                     metrics_from_eigs, paired_stats, run_parallel)
+from regime_common import (K_VALUES, LARGE_K, N_SUBJECTS, SCALES, Spectral, holm, load_ranks, load_stack,
+                           metrics_from_eigs, out_dir, paired_stats, run_parallel)
+from hoc.runs import stage_from_argv
+from hoc.utils import n_jobs
 
 HORIZONS = (1.0, 2.5, 5.0, np.inf)
 C_FH = (0.01, 0.1, 1.0)
@@ -62,11 +65,17 @@ def summarize(diff, keys, holm_family):
 
 
 if __name__ == "__main__":
+    ctx = stage_from_argv("revision/regime/03_horizon_eps_largek")
+    ctx.require_stage("00_prepare_data")
+    ctx.require_stage("01_primary")
+    ctx.begin()
+    ROOT = ctx.root
+    OUT_DIR = out_dir(ROOT)
     allrows = []
     for scale in SCALES:
-        stack = load_stack(scale)
-        ranks = load_ranks(scale)
-        res = run_parallel(job, [(scale, i, {key: v for key, v in ranks.items() if key[0] == f"sub-{i:03d}"}, stack[i]) for i in range(N_SUBJECTS)], n_jobs=8)
+        stack = load_stack(scale, ROOT)
+        ranks = load_ranks(scale, ROOT)
+        res = run_parallel(job, [(scale, i, {key: v for key, v in ranks.items() if key[0] == f"sub-{i:03d}"}, stack[i]) for i in range(N_SUBJECTS)], n_jobs=n_jobs(8))
         for r in res:
             allrows.extend(r)
     tidy = pd.DataFrame(allrows)
@@ -90,3 +99,4 @@ if __name__ == "__main__":
     d3 = paired(s3, ["scale", "c", "k"])
     summarize(d3, ["c", "scale", "k"], ["c"]).to_csv(OUT_DIR / "task5_S3_largek_summary.csv", index=False)
     print("done")
+    ctx.finish()

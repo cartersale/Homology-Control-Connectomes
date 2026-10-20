@@ -1,5 +1,10 @@
 #!/usr/bin/env python
-"""Make paper-style degree/cycle rank-divergence panels for each atlas scale."""
+"""Make paper-style degree/cycle rank-divergence panels for each atlas scale.
+
+Usage: python scripts/07_make_rank_divergence_panels.py [--run <name>]
+(default $HOC_RUN or "main"; ``--run results`` reads the legacy tree). Panels go
+to <run>/figures/ (runs/results-derived/figures/ for the legacy tree).
+"""
 
 from __future__ import annotations
 
@@ -33,10 +38,11 @@ from matplotlib.collections import PolyCollection
 
 from hoc.atlas import EXCLUDED_LABELS, SCALE_TO_RESOLUTION, surface_values_from_node_scores
 from hoc.targets import margulies_principal_gradient
+from hoc.runs import figures_dir, reader_run_dir
 
-RESULTS_DIR = REPO_ROOT / "results"
-FIGURES_DIR = REPO_ROOT / "figures"
-FIGURES_DIR.mkdir(exist_ok=True)
+RESULTS_DIR = reader_run_dir()
+FIGURES_DIR = figures_dir(RESULTS_DIR)
+
 ATLAS_DIR = REPO_ROOT / "data" / "external" / "atlas_cache" / "atl-cammoun2012" / "fsaverage5"
 FSAVERAGE = datasets.load_fsaverage(mesh="fsaverage5")
 # Denser mesh for rendering: parcel labels live on fsaverage5, but the piecewise-constant

@@ -4,6 +4,8 @@
 Convention: per subject, pct = 100 (E_cycle - E_degree)/E_degree averaged over k in {1,2,3,5};
 median across 70 subjects, bootstrap 95% CI (2000, seed 20260423), n negative / positive,
 two-sided Wilcoxon, rank-biserial r (positive = degree advantage), Holm within scale x family x variant.
+
+Run: python scripts/revision/targets/03_target_stats.py --run <name> [--overwrite]  (reads/writes runs/<name>/)
 """
 
 from __future__ import annotations
@@ -16,6 +18,8 @@ from scipy.stats import spearmanr, wilcoxon
 from statsmodels.stats.multitest import multipletests
 
 import common as C
+
+ctx = C.start_stage(__file__, [C.stage("02_target_energies")])
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 L = pd.read_csv(C.OUT / "target_energies_long.csv.gz")
@@ -115,3 +119,4 @@ print(named[named.family.isin(["keyword_module", "yeo7_network", "legacy", "dist
       [["variant", "scale", "target_name", "median_pct", "ci_low", "ci_high", "n_negative", "n_positive", "p_holm", "rank_biserial", "rho_pct_vs_ddist"]]
       .round(4).to_string())
 print(pd.DataFrame(sp_rows).round(4).to_string())
+ctx.finish()

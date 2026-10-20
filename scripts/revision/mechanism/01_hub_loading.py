@@ -17,7 +17,8 @@ Per network (real connectomes and every saved null network) this records:
   jac_top5        Jaccard of the top-5 regions by strength and by v1
   L_deg_k / L_max_k  Perron loading of the top-k strength set and the largest attainable loading (top-k by v1^2)
   l1, l2, gap, strength_assort
-Outputs: results/revision/mechanism/hub_loading.csv.gz, hub_loading_summary.csv
+Outputs (runs/<name>/revision/mechanism/; choose the run with ``--run <name>``): hub_loading.csv.gz,
+hub_loading_summary.csv
 """
 
 from __future__ import annotations
@@ -34,10 +35,16 @@ import pandas as pd
 from joblib import Parallel, delayed
 from scipy.stats import spearmanr, wilcoxon
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "nulls"))
-from _common import NULL_TYPES, OUT_DIR as NULL_DIR, REPO_ROOT, SCALES, load_stack  # noqa: E402
+NULLS_DIR = Path(__file__).resolve().parents[1] / "nulls"  # shared helpers: nulls/nulls_common.py
+if str(NULLS_DIR) not in sys.path:
+    sys.path.insert(0, str(NULLS_DIR))
+from nulls_common import NULL_TYPES, SCALES, load_stack, out_dir  # noqa: E402
+from hoc.runs import stage_from_argv  # noqa: E402
+from hoc.utils import n_jobs  # noqa: E402
 
-OUT = REPO_ROOT / "results" / "revision" / "mechanism"
+ROOT: Path  # run directory (runs/<name>/), set in main()
+NULL_DIR: Path  # <run>/revision/nulls, set in main()
+OUT: Path  # <run>/revision/mechanism, set in main()
 K_VALUES = (1, 2, 3, 5)
 
 
@@ -73,7 +80,7 @@ def stats(A: np.ndarray) -> dict:
 def job(null: str, scale: int, si: int) -> list[dict]:
     ids = {"null": null, "scale": scale, "subject_id": f"sub-{si:03d}"}
     if null == "real":
-        return [{**ids, "null_index": -1, **stats(load_stack(scale)[si])}]
+        return [{**ids, "null_index": -1, **stats(load_stack(scale, ROOT)[si])}]
     triu = np.load(NULL_DIR / "networks" / null / f"scale-{scale}" / f"sub-{si:03d}.npz")["triu"]
     iu = np.triu_indices(scale, 1)
     rows = []
@@ -85,9 +92,17 @@ def job(null: str, scale: int, si: int) -> list[dict]:
 
 
 def main():
+    global ROOT, NULL_DIR, OUT
+    ctx = stage_from_argv("revision/mechanism/01_hub_loading")
+    ctx.require_stage("00_prepare_data")
+    ctx.require_stage("revision/nulls/01_run_nulls")
+    ctx.begin()
+    ROOT = ctx.root
+    NULL_DIR = out_dir(ROOT)
+    OUT = ROOT / "revision" / "mechanism"
     OUT.mkdir(parents=True, exist_ok=True)
     jobs = [(n, s, i) for n in ("real",) + NULL_TYPES for s in SCALES for i in range(70)]
-    out = Parallel(n_jobs=12)(delayed(job)(*j) for j in jobs)
+    out = Parallel(n_jobs=n_jobs(12))(delayed(job)(*j) for j in jobs)
     df = pd.DataFrame([r for rows in out for r in rows])
     df.to_csv(OUT / "hub_loading.csv.gz", index=False)
     print("identity max abs error:", df["max_identity_err"].max())
@@ -118,6 +133,7 @@ def main():
             acc.append({"scale": scale, "y": y, "rho_with_assort": r.statistic, "p": r.pvalue})
     print(pd.DataFrame(acc).round(3).to_string(index=False))
     pd.DataFrame(acc).to_csv(OUT / "hub_loading_assort_corr.csv", index=False)
+    ctx.finish()
 
 
 if __name__ == "__main__":

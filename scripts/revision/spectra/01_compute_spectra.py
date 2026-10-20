@@ -15,11 +15,11 @@ new matched control sets:
 * ``cycle_resid``            top-k of the residual of cycle participation regressed (OLS,
                              with intercept) on strength within subject.
 
-Outputs (results/revision/spectra/):
+Outputs (runs/<name>/revision/spectra/; choose the run with ``--run <name>``):
   set_metrics.csv                     one row per driver set
   spectra_scale-{N}.npz               sorted (descending) eigenvalue spectra of W_eps
   centroids_scale-{N}.csv             parcel centroids (fsaverage5 pial, mean vertex)
-  verification.json                   reproduction checks against results/primary
+  verification.json                   reproduction checks against <run>/primary
 """
 
 from __future__ import annotations
@@ -42,9 +42,11 @@ from hoc.config import load_config  # noqa: E402
 from hoc.control import assemble_gramian, gramian_metrics, single_node_gramians  # noqa: E402
 from hoc.preprocessing import stabilize_adjacency  # noqa: E402
 from hoc.rankings import random_top_k_nodes, top_k_nodes  # noqa: E402
-from hoc.utils import make_rng, subject_seed  # noqa: E402
+from hoc.runs import RunContext, add_run_arguments  # noqa: E402
+from hoc.utils import make_rng, n_jobs, subject_seed  # noqa: E402
 
-OUT = REPO_ROOT / "results" / "revision" / "spectra"
+STAGE = "revision/spectra/01_compute_spectra"
+OUT: Path  # set in main(): <run>/revision/spectra
 METHODS = [
     "degree_strength",
     "eigenvector_centrality",
@@ -233,15 +235,22 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--config", default="config/default.toml")
     ap.add_argument("--subject-limit", type=int, default=None)
-    ap.add_argument("--n-jobs", type=int, default=10)
+    ap.add_argument("--n-jobs", type=int, default=n_jobs(10))
+    add_run_arguments(ap)
     args = ap.parse_args()
+    global OUT
+    ctx = RunContext.from_args(STAGE, args, config_path=args.config)
+    ctx.require_stage("00_prepare_data")
+    ctx.require_stage("01_primary")
+    ctx.begin()
+    OUT = ctx.root / "revision" / "spectra"
     cfg = load_config(REPO_ROOT / args.config)
     OUT.mkdir(parents=True, exist_ok=True)
     atlas_dir = REPO_ROOT / cfg["paths"]["atlas_dir"]
     k_values = [int(k) for k in cfg["analysis"]["top_k_values"]]
 
     print("Loading node scores ...", flush=True)
-    ns = pd.read_csv(REPO_ROOT / "results/primary/node_scores.csv", usecols=["subject_id", "scale", "node_index", "method", "score"])
+    ns = pd.read_csv(ctx.root / "primary/node_scores.csv", usecols=["subject_id", "scale", "node_index", "method", "score"])
     all_rows = []
     extras = []
     verification = {}
@@ -254,7 +263,7 @@ def main():
         xyz = cen[["x", "y", "z"]].to_numpy()
         dist = np.linalg.norm(xyz[:, None, :] - xyz[None, :, :], axis=-1)
 
-        stack = np.load(REPO_ROOT / f"results/processed/connectomes_scale-{scale}.npz")["adjacency"]
+        stack = np.load(ctx.root / f"processed/connectomes_scale-{scale}.npz")["adjacency"]
         n_subj = stack.shape[0] if args.subject_limit is None else min(stack.shape[0], args.subject_limit)
         sub = ns[ns.scale == scale]
         score_maps = {}
@@ -291,7 +300,7 @@ def main():
     pd.DataFrame(extras).to_csv(OUT / "subject_extras.csv", index=False)
 
     # ---- Verification against saved primary outputs ----
-    geo = pd.read_csv(REPO_ROOT / "results/primary/geometry_metrics.csv")
+    geo = pd.read_csv(ctx.root / "primary/geometry_metrics.csv")
     geo = geo[geo.selection_strategy == "static"].copy()
     geo["sample"] = geo.groupby(["subject_id", "scale", "k", "method"]).cumcount()
     geo.loc[geo.method != "random", "sample"] = -1
@@ -300,7 +309,7 @@ def main():
     for col in ("effective_rank", "participation_ratio", "log10_condition_number", "log10_average_energy"):
         verification[f"max_abs_diff_{col}"] = float(np.nanmax(np.abs(merged[col] - merged[f"{col}_saved"])))
     verification["n_rows_compared"] = int(len(merged))
-    ds = pd.read_csv(REPO_ROOT / "results/primary/driver_sets.csv")
+    ds = pd.read_csv(ctx.root / "primary/driver_sets.csv")
     ds = ds[(ds.selection_strategy == "static")].copy()
     ds["sample"] = ds.groupby(["subject_id", "scale", "k", "method"]).cumcount()
     ds.loc[ds.method != "random", "sample"] = -1
@@ -314,6 +323,7 @@ def main():
     verification["cycle_minus_degree_ER_npos"] = {int(s): int((v > 0).sum()) for s, v in diff}
     (OUT / "verification.json").write_text(json.dumps(verification, indent=2))
     print(json.dumps(verification, indent=2))
+    ctx.finish()
 
 
 if __name__ == "__main__":

@@ -1,6 +1,22 @@
+"""Conceptual degree-vs-cycle figure on the Cammoun-68 lateral surface.
+
+Usage: python scripts/03_make_conceptual_degree_cycle_figure.py [--run <name>]
+
+Reads processed/connectomes_scale-68.npz from the run directory (``--run``,
+default $HOC_RUN or "main"; ``--run results`` reads the legacy tree) and writes
+figures/figure_concept_degree_vs_cycle.png under that run (derived figures for
+the legacy tree go to runs/results-derived/).
+"""
+
 from __future__ import annotations
 
+import sys
 from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SRC_ROOT = REPO_ROOT / "src"
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
 
 import nibabel as nib
 import networkx as nx
@@ -13,12 +29,15 @@ from nilearn import datasets
 
 from hoc.rankings import strength_scores
 from hoc.topology import cycle_participation
+from hoc.runs import figures_dir, reader_run_dir
 
 
-FIGURES_DIR = Path("figures")
+RUN_DIR = reader_run_dir()
+FIGURES_DIR = figures_dir(RUN_DIR)
 OUTPUT_PATH = FIGURES_DIR / "figure_concept_degree_vs_cycle.png"
-ATLAS_DIR = Path("data/external/atlas_cache/atl-cammoun2012/fsaverage5")
-CONNECTOME_PATH = Path("results/processed/connectomes_scale-68.npz")
+ATLAS_DIR = REPO_ROOT / "data/external/atlas_cache/atl-cammoun2012/fsaverage5"
+CONNECTOME_PATH = RUN_DIR / "processed" / "connectomes_scale-68.npz"
+
 
 EXCLUDED_LABELS = {"unknown", "corpuscallosum"}
 HEMI_TO_PART = {"L": "left", "R": "right"}

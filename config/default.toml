@@ -3,8 +3,6 @@ title = "Higher-order connectome control analysis"
 [paths]
 raw_connectomes = "data/raw/Individual_Connectomes.mat"
 atlas_dir = "data/external/atlas_cache/atl-cammoun2012/fsaverage5"
-results_dir = "results"
-figures_dir = "figures"
 
 [analysis]
 parcellation_scales = [68, 114, 219]

@@ -5,7 +5,12 @@ Reuses the exact primary pipeline:
   W = infinite-horizon controllability Gramian (Lyapunov A W + W A^T = -B B^T)
   W_eps = W + eps I, eigenvalues floored at eps (hoc.control.gramian_metrics)
   E_target = x*^T W_eps^{-1} x*
-Driver sets are the saved static top-k sets (results/primary/driver_sets.csv).
+Driver sets are the saved static top-k sets (<run>/primary/driver_sets.csv).
+
+All inputs and outputs live in a run directory (hoc.runs): every script calls
+``start_stage(__file__, requires=[...])``, which reads ``--run <name>`` (or $HOC_RUN),
+checks that the upstream stages finished, and points ROOT / PROCESSED / OUT at
+``runs/<name>/``, ``runs/<name>/processed`` and ``runs/<name>/revision/targets``.
 
 Because A is symmetric, the Lyapunov solution is computed in closed form in the eigenbasis
 of A (W~_ij = (V^T B B^T V)_ij / -(l_i + l_j)); this is verified against the saved primary
@@ -29,11 +34,13 @@ sys.path.insert(0, str(REPO / "src"))
 
 from hoc.atlas import EXCLUDED_LABELS, SCALE_TO_RESOLUTION  # noqa: E402
 from hoc.preprocessing import stabilize_adjacency  # noqa: E402
+from hoc.runs import RunContext, stage_from_argv  # noqa: E402
 from hoc.targets import _fsaverage5_from_fslr_index  # noqa: E402
 
-OUT = REPO / "results" / "revision" / "targets"
-OUT.mkdir(parents=True, exist_ok=True)
-PROCESSED = REPO / "results" / "processed"
+# Run-directory paths; set by start_stage() / set_root() before any data access.
+ROOT: Path | None = None  # runs/<name>/
+PROCESSED: Path | None = None  # runs/<name>/processed
+OUT: Path | None = None  # runs/<name>/revision/targets
 ATLAS_DIR = REPO / "data" / "external" / "atlas_cache" / "atl-cammoun2012" / "fsaverage5"
 YEO_DIR = REPO / "data" / "external" / "yeo2011_fsaverage5"
 SCALES = (68, 114, 219)
@@ -42,6 +49,33 @@ METHODS = ("degree_strength", "cycle_participation")
 SEED = 20260423
 PRIMARY_C = 0.1
 PRIMARY_EPS = 1.0e-5
+
+STAGE_PREFIX = "revision/targets/"
+
+
+def stage(script_stem: str) -> str:
+    """Pipeline stage name of a script in this folder, e.g. stage("01_build_targets")."""
+    return STAGE_PREFIX + script_stem
+
+
+def set_root(root: str | Path) -> None:
+    """Point ROOT / PROCESSED / OUT at a run directory."""
+    global ROOT, PROCESSED, OUT
+    ROOT = Path(root)
+    PROCESSED = ROOT / "processed"
+    OUT = ROOT / "revision" / "targets"
+    OUT.mkdir(parents=True, exist_ok=True)
+
+
+def start_stage(script: str | Path, requires: tuple[str, ...] | list[str] = ()) -> RunContext:
+    """Create the RunContext for a script (``--run``/``--overwrite``), check upstream stages, begin it."""
+    ctx = stage_from_argv(stage(Path(script).stem))
+    for upstream in requires:
+        ctx.require_stage(upstream)
+    ctx.begin()
+    set_root(ctx.root)
+    return ctx
+
 
 YEO7_NAMES = {1: "Visual", 2: "SomMot", 3: "DorsAttn", 4: "VentAttn", 5: "Limbic", 6: "FrontoParietal", 7: "Default"}
 
@@ -71,7 +105,7 @@ def adjacency_stack(scale: int) -> np.ndarray:
 
 @lru_cache(maxsize=None)
 def driver_sets() -> pd.DataFrame:
-    d = pd.read_csv(REPO / "results" / "primary" / "driver_sets.csv")
+    d = pd.read_csv(ROOT / "primary" / "driver_sets.csv")
     d = d[(d.selection_strategy == "static") & d.method.isin(METHODS)].copy()
     d["nodes"] = d.node_indices.astype(str).map(lambda s: np.array([int(x) for x in s.split(";")]))
     return d
@@ -195,7 +229,22 @@ def yeo_assignment(scale: int, n_networks: int = 7) -> pd.DataFrame:
     return df
 
 
-NM_ATLAS = Path.home() / "neuromaps-data" / "atlases"
+def _registration_files(hemi: str) -> tuple[Path, Path, Path]:
+    """(fsLR-32k sphere registered to fsaverage, fsaverage-10k sphere, fsLR-32k no-medial-wall label).
+
+    Resolved through neuromaps (respects $NEUROMAPS_DATA; downloads on first use). The registered
+    fsLR sphere is part of the fsLR atlas download but not listed in fetch_atlas()'s return value, so
+    it is located in the fsLR atlas folder exactly as neuromaps.transforms does.
+    """
+    from neuromaps.datasets import fetch_atlas
+    from neuromaps.datasets.atlases import get_atlas_dir
+
+    fslr = fetch_atlas("fsLR", "32k", verbose=0)
+    fsavg = fetch_atlas("fsaverage", "10k", verbose=0)
+    src = get_atlas_dir("fsLR") / f"tpl-fsLR_space-fsaverage_den-32k_hemi-{hemi}_sphere.surf.gii"
+    if not src.exists():
+        raise FileNotFoundError(f"neuromaps fsLR->fsaverage registration sphere not found: {src}")
+    return src, Path(getattr(fsavg["sphere"], hemi)), Path(getattr(fslr["medial"], hemi))
 
 
 @lru_cache(maxsize=None)
@@ -205,9 +254,10 @@ def _registered_nn(hemi: str) -> np.ndarray:
     share the fsaverage spherical coordinate system."""
     from scipy.spatial import cKDTree
 
-    src = nib.load(str(NM_ATLAS / "fsLR" / f"tpl-fsLR_space-fsaverage_den-32k_hemi-{hemi}_sphere.surf.gii")).agg_data()[0]
-    trg = nib.load(str(NM_ATLAS / "fsaverage" / f"tpl-fsaverage_den-10k_hemi-{hemi}_sphere.surf.gii")).agg_data()[0]
-    cortex = np.asarray(nib.load(str(NM_ATLAS / "fsLR" / f"tpl-fsLR_den-32k_hemi-{hemi}_desc-nomedialwall_dparc.label.gii")).agg_data()) > 0
+    src_path, trg_path, medial_path = _registration_files(hemi)
+    src = nib.load(str(src_path)).agg_data()[0]
+    trg = nib.load(str(trg_path)).agg_data()[0]
+    cortex = np.asarray(nib.load(str(medial_path)).agg_data()) > 0
     src = src / np.linalg.norm(src, axis=1, keepdims=True)
     trg = trg / np.linalg.norm(trg, axis=1, keepdims=True)
     idx = np.flatnonzero(cortex)

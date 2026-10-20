@@ -14,14 +14,19 @@ Three escalating readouts are produced:
                      differs between schemes.
 
 This script is intentionally separate from the main `scripts/` pipeline: it reads
-the preprocessed connectomes and writes to its own results subdirectory without
-touching any primary output.
+the preprocessed connectomes from ``<run>/processed/`` and writes to its own
+subdirectory ``<run>/<--output-subdir>/`` without touching any primary output.
+The run is chosen with ``--run <name>`` (default $HOC_RUN or "main"); the legacy
+``results`` tree is read-only and cannot be used. As in the main pipeline,
+``--subject-limit N`` selects the separate smoke-test run ``<name>__nN``. Each
+scale is recorded as its own stage in the run manifest; rerunning a finished
+scale needs ``--overwrite``.
 
 Example
 -------
-    python scripts/representative_stability/run_representative_stability.py
+    python scripts/representative_stability/run_representative_stability.py --run main
     python scripts/representative_stability/run_representative_stability.py \
-        --scale 114 --subject-limit 5 --weight-mode hops
+        --run main --scale 114 --subject-limit 5 --weight-mode hops
 """
 
 from __future__ import annotations
@@ -47,9 +52,10 @@ from hoc.config import load_config
 from hoc.control import assemble_gramian, gramian_metrics, single_node_gramians
 from hoc.dataset import load_raw_connectomes
 from hoc.io import write_csv
-from hoc.paths import ensure_directory, resolve_repo_path
+from hoc.paths import ensure_directory
 from hoc.preprocessing import preprocess_structural_adjacency, stabilize_adjacency
 from hoc.rankings import strength_scores, top_k_nodes
+from hoc.runs import RunContext, add_run_arguments, read_manifest
 from hoc.utils import make_rng
 
 from representative_schemes import cycle_participation_by_scheme
@@ -97,17 +103,38 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output-subdir",
         default="representative_stability",
-        help="Subdirectory of the configured results dir for outputs.",
+        help="Subdirectory of the run directory for outputs.",
     )
     parser.add_argument("--n-boot", type=int, default=2000, help="Bootstrap resamples for median CIs.")
+    add_run_arguments(parser)
     return parser.parse_args()
 
 
-def load_adjacency_stack(config: dict, scale: int, subject_limit: int | None) -> np.ndarray:
+def stage_name(args: argparse.Namespace) -> str:
+    """Manifest stage name: one stage per output subdirectory and scale."""
+    stage = "representative_stability/run_representative_stability"
+    if args.output_subdir != "representative_stability":
+        stage += f":{args.output_subdir}"
+    return stage + f":scale-{args.scale}"
+
+
+def check_subject_count(run_dir: Path, n_subjects: int, source: Path) -> None:
+    """Fail if the connectome stack does not match the run's recorded subject set."""
+    manifest = read_manifest(run_dir) or {}
+    subjects = manifest.get("subjects")
+    if subjects is not None and len(subjects) != n_subjects:
+        raise RuntimeError(
+            f"{source} holds {n_subjects} subjects but the manifest of {run_dir} lists {len(subjects)}; "
+            "the processed connectomes do not belong to this run."
+        )
+
+
+def load_adjacency_stack(config: dict, scale: int, subject_limit: int | None, run_dir: Path) -> np.ndarray:
     """Load preprocessed connectomes, falling back to preprocessing the raw stack."""
-    processed_path = resolve_repo_path(config["paths"]["results_dir"]) / "processed" / f"connectomes_scale-{scale}.npz"
+    processed_path = run_dir / "processed" / f"connectomes_scale-{scale}.npz"
     if processed_path.exists():
         stack = np.load(processed_path)["adjacency"]
+        check_subject_count(run_dir, stack.shape[0], processed_path)
     else:
         raw = load_raw_connectomes(config["paths"]["raw_connectomes"])[scale]
         stack = np.stack(
@@ -392,13 +419,24 @@ def main() -> None:
     args = parse_args()
     config = load_config(REPO_ROOT / args.config)
     control_config = config["control"]
-    output_dir = ensure_directory(resolve_repo_path(config["paths"]["results_dir"]) / args.output_subdir)
+    ctx = RunContext.from_args(stage_name(args), args)
+    output_dir = ctx.root / args.output_subdir
 
     schemes: tuple[str, ...] = tuple(dict.fromkeys(args.schemes))
     k_values = args.k_values or sorted({*(int(k) for k in config["analysis"]["top_k_values"]), 15})
 
-    stack = load_adjacency_stack(config, args.scale, args.subject_limit)
+    stack = load_adjacency_stack(config, args.scale, args.subject_limit, ctx.root)
+    ctx.begin()
+    ensure_directory(output_dir)
+    written: list[Path] = []
+
+    def save(frame: pd.DataFrame, name: str) -> None:
+        path = output_dir / name
+        write_csv(frame, path)
+        written.append(path)
+
     rng = make_rng(int(config["analysis"]["random_seed"]) + 101)
+
 
     score_rows: list[dict] = []
     node_rows: list[dict] = []
@@ -458,20 +496,20 @@ def main() -> None:
         ]
     )
 
-    write_csv(nodes, output_dir / f"node_scores_by_scheme_scale-{args.scale}.csv")
-    write_csv(scores, output_dir / f"score_correlations_scale-{args.scale}.csv")
-    write_csv(score_summary, output_dir / f"score_correlation_summary_scale-{args.scale}.csv")
-    write_csv(selection, output_dir / f"selection_overlap_scale-{args.scale}.csv")
-    write_csv(selection_summary, output_dir / f"selection_overlap_summary_scale-{args.scale}.csv")
-    write_csv(geometry, output_dir / f"geometry_by_scheme_scale-{args.scale}.csv")
-    write_csv(result_summary, output_dir / f"result_level_summary_scale-{args.scale}.csv")
-    write_csv(contrast_summary, output_dir / f"scheme_contrast_summary_scale-{args.scale}.csv")
-    write_csv(diagnostics, output_dir / f"representative_diagnostics_scale-{args.scale}.csv")
-    write_csv(diagnostic_summary, output_dir / f"representative_diagnostics_summary_scale-{args.scale}.csv")
-    write_csv(settings, output_dir / f"run_settings_scale-{args.scale}.csv")
+    save(nodes, f"node_scores_by_scheme_scale-{args.scale}.csv")
+    save(scores, f"score_correlations_scale-{args.scale}.csv")
+    save(score_summary, f"score_correlation_summary_scale-{args.scale}.csv")
+    save(selection, f"selection_overlap_scale-{args.scale}.csv")
+    save(selection_summary, f"selection_overlap_summary_scale-{args.scale}.csv")
+    save(geometry, f"geometry_by_scheme_scale-{args.scale}.csv")
+    save(result_summary, f"result_level_summary_scale-{args.scale}.csv")
+    save(contrast_summary, f"scheme_contrast_summary_scale-{args.scale}.csv")
+    save(diagnostics, f"representative_diagnostics_scale-{args.scale}.csv")
+    save(diagnostic_summary, f"representative_diagnostics_summary_scale-{args.scale}.csv")
+    save(settings, f"run_settings_scale-{args.scale}.csv")
     if library_rows:
         library_comparison = pd.DataFrame(library_rows)
-        write_csv(library_comparison, output_dir / f"library_comparison_scale-{args.scale}.csv")
+        save(library_comparison, f"library_comparison_scale-{args.scale}.csv")
         print("\n=== Level 0: do Ripser and GUDHI agree? ===")
         print(
             library_comparison.drop(columns=["subject_id"])
@@ -481,6 +519,7 @@ def main() -> None:
         )
 
     report(score_summary, selection_summary, result_summary)
+    ctx.finish(written)
     print(f"\nOutputs written to {output_dir}")
 
 

@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 """Build corrected target sets (Yeo-network, corrected keyword, re-oriented gradients) and list parcels.
 
-Outputs (results/revision/targets/):
+Outputs (<run>/revision/targets/):
   parcel_network_assignment.csv   per-parcel Yeo7/Yeo17 majority label, purity, keyword-mask membership
   target_mask_parcels.csv         exact parcel list for every target mask per scale (old and new)
   gradient_orientation.csv        vertex-level orientation check of Margulies G1/G2
   targets_scale-{s}.npz           unit-norm target vectors (all families)
   target_catalog.csv              target name, family, n support nodes
+
+Run: python scripts/revision/targets/01_build_targets.py --run <name> [--overwrite]  (reads/writes runs/<name>/)
 """
 
 from __future__ import annotations
@@ -18,6 +20,8 @@ import numpy as np
 import pandas as pd
 
 import common as C
+
+ctx = C.start_stage(__file__, ["00_prepare_data"])
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
@@ -154,3 +158,4 @@ A = pd.concat(assign_all)
 print(A.groupby(["scale", "yeo7_name"]).size().unstack(0))
 print("purity median/min by scale:", A.groupby("scale").yeo7_purity.agg(["median", "min"]).to_dict())
 print(masks[["scale", "target_name", "n_positive", "n_negative"]].to_string())
+ctx.finish()

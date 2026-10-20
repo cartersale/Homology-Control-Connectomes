@@ -6,8 +6,8 @@ on average, a region is from its closest driver. Distances: hop count on the bin
 shortest paths with edge length 1/w and -log w. Regions unreachable from every driver (the single isolated
 region in one subject) are excluded from the mean.
 
-Sets: all criteria and the 100 primary random sets from results/revision/q1/set_q1.csv.gz (k in {1,2,3,5}).
-Outputs:
+Sets: all criteria and the 100 primary random sets from <run>/revision/q1/set_q1.csv.gz (k in {1,2,3,5}).
+Outputs (<run>/revision/mechanism/, <run> = runs/<name>/; choose it with ``--run <name>``):
   coverage_sets.csv.gz        per set: coverage (3 distances), q1, L_S, at c in {0.01, 0.1, 1}
   coverage_by_criterion.csv   criterion minus random mean, percentile, n subjects below random (c = 0.1)
   coverage_rho.csv            within-subject Spearman rho(coverage, q1) and partial rho given L_S, per k and c
@@ -26,11 +26,16 @@ import pandas as pd
 from joblib import Parallel, delayed
 from scipy.sparse.csgraph import shortest_path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "nulls"))
-from _common import REPO_ROOT, SCALES, load_stack  # noqa: E402
+NULLS_DIR = Path(__file__).resolve().parents[1] / "nulls"  # shared helpers: nulls/nulls_common.py
+if str(NULLS_DIR) not in sys.path:
+    sys.path.insert(0, str(NULLS_DIR))
+from nulls_common import SCALES, load_stack  # noqa: E402
+from hoc.runs import stage_from_argv  # noqa: E402
+from hoc.utils import n_jobs  # noqa: E402
 
-OUT = REPO_ROOT / "results" / "revision" / "mechanism"
-Q1 = REPO_ROOT / "results" / "revision" / "q1" / "set_q1.csv.gz"
+ROOT: Path  # run directory (runs/<name>/), set in main()
+OUT: Path  # <run>/revision/mechanism, set in main()
+Q1: Path  # <run>/revision/q1/set_q1.csv.gz, set in main()
 DISTS = ("hop", "inv", "log")
 
 
@@ -67,15 +72,23 @@ def job(scale, si, A, sets):
 
 
 def main():
+    global ROOT, OUT, Q1
+    ctx = stage_from_argv("revision/mechanism/03_coverage_distance")
+    ctx.require_stage("00_prepare_data")
+    ctx.require_stage("revision/q1/01_compute_q1")
+    ctx.begin()
+    ROOT = ctx.root
+    OUT = ROOT / "revision" / "mechanism"
+    Q1 = ROOT / "revision" / "q1" / "set_q1.csv.gz"
     OUT.mkdir(parents=True, exist_ok=True)
     df = pd.read_csv(Q1, usecols=["subject_id", "scale", "c", "k", "family", "sample", "nodes", "q1", "loading"])
     df = df[~df["family"].str.endswith("matched")]
     frames = []
     for scale in SCALES:
-        stack = load_stack(scale)
+        stack = load_stack(scale, ROOT)
         sub = df[df["scale"] == scale]
         groups = {sid: g for sid, g in sub.groupby("subject_id")}
-        frames += Parallel(n_jobs=12)(delayed(job)(scale, si, stack[si], groups[f"sub-{si:03d}"]) for si in range(stack.shape[0]))
+        frames += Parallel(n_jobs=n_jobs(12))(delayed(job)(scale, si, stack[si], groups[f"sub-{si:03d}"]) for si in range(stack.shape[0]))
         print(scale, "done", flush=True)
     res = pd.concat(frames, ignore_index=True)
     res.to_csv(OUT / "coverage_sets.csv.gz", index=False)
@@ -123,6 +136,7 @@ def main():
     print(show.pivot_table(index="family", columns="scale", values=["mean_d_hop", "mean_d_inv", "pct_inv", "n_closer_inv"]).round(3).to_string())
     rk = rho[rho["k"] > 1].groupby(["scale", "subject_id", "c"]).mean(numeric_only=True).reset_index()
     print(rk.groupby(["scale", "c"])[[c for c in rk.columns if c.startswith(("rho_", "prho_"))]].median().round(3).to_string())
+    ctx.finish()
 
 
 if __name__ == "__main__":

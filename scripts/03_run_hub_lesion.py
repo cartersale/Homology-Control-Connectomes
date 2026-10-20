@@ -20,6 +20,8 @@ from hoc.atlas import build_label_table
 from hoc.config import load_config
 from hoc.control import assemble_gramian, gramian_metrics, single_node_gramians, target_energy
 from hoc.dataset import load_raw_connectomes
+from hoc.dataset import build_subject_table
+from hoc.runs import RunContext, add_run_arguments
 from hoc.io import prepare_results_tree, write_csv
 from hoc.preprocessing import preprocess_structural_adjacency, stabilize_adjacency
 from hoc.rankings import compute_node_scores, top_k_excluding_nodes, top_k_nodes
@@ -30,6 +32,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default="config/default.toml", help="Path to the TOML config file.")
     parser.add_argument("--subject-limit", type=int, default=None, help="Optional cap for smoke tests.")
+    add_run_arguments(parser)
     return parser.parse_args()
 
 
@@ -57,7 +60,9 @@ def surviving_target(target: np.ndarray, keep_mask: np.ndarray) -> tuple[np.ndar
 def main() -> None:
     args = parse_args()
     config = load_config(REPO_ROOT / args.config)
-    results = prepare_results_tree(config["paths"]["results_dir"])
+    ctx = RunContext.from_args("03_hub_lesion", args)
+    ctx.require_stage("00_prepare_data")
+    results = prepare_results_tree(ctx.root)
     raw_connectomes = load_raw_connectomes(config["paths"]["raw_connectomes"])
 
     scales = [int(scale) for scale in config["analysis"]["parcellation_scales"]]
@@ -75,6 +80,7 @@ def main() -> None:
     n_subjects = next(iter(raw_connectomes.values())).shape[2]
     if args.subject_limit is not None:
         n_subjects = min(n_subjects, args.subject_limit)
+    ctx.begin(build_subject_table(n_subjects)["subject_id"].tolist())
 
     driver_rows: list[dict] = []
     geometry_rows: list[dict] = []
@@ -208,6 +214,8 @@ def main() -> None:
     write_csv(pd.DataFrame(driver_rows), results["hub_lesion"] / "driver_sets.csv")
     write_csv(pd.DataFrame(geometry_rows), results["hub_lesion"] / "geometry_degradation.csv")
     write_csv(pd.DataFrame(target_rows), results["hub_lesion"] / "target_energy_degradation.csv")
+
+    ctx.finish()
 
 
 if __name__ == "__main__":

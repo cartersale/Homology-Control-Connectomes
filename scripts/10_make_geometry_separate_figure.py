@@ -5,11 +5,16 @@ Companion to the cycle-minus-degree difference figure: instead of the difference
 plots the absolute effective rank, participation ratio, and log10 condition number for
 degree-strength and cycle-participation static driver sets separately, across parcellation
 scales (averaged over k in {1,2,3,5}).
+
+Usage: python scripts/10_make_geometry_separate_figure.py [--run <name>]
+(default $HOC_RUN or "main"; ``--run results`` reads the legacy tree, with the
+figure written to runs/results-derived/figures/).
 """
 
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
 os.environ.setdefault("MPLCONFIGDIR", "/private/tmp/matplotlib")
@@ -19,8 +24,11 @@ import numpy as np
 import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-FIGURES_DIR = REPO_ROOT / "figures"
-FIGURES_DIR.mkdir(exist_ok=True)
+SRC_ROOT = REPO_ROOT / "src"
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
+
+from hoc.runs import figures_dir, reader_run_dir
 
 # Degree/cycle colors match the rank-divergence figure (degree-only red, cycle-only blue).
 DEG_COLOR, CYC_COLOR = "#ef3b2c", "#2b8cbe"
@@ -34,8 +42,8 @@ PANELS = [
 ]
 
 
-def load_metrics() -> pd.DataFrame:
-    df = pd.read_csv(REPO_ROOT / "results" / "primary" / "geometry_metrics.csv")
+def load_metrics(run_dir: Path) -> pd.DataFrame:
+    df = pd.read_csv(run_dir / "primary" / "geometry_metrics.csv")
     df = df[(df["selection_strategy"] == "static") & df["k"].isin(K_VALUES) & df["method"].isin([m for m, _, _ in METHODS])]
     metrics = [metric for metric, _ in PANELS]
     # Average across driver-set sizes within subject, matching the difference figure.
@@ -43,7 +51,9 @@ def load_metrics() -> pd.DataFrame:
 
 
 def main() -> None:
-    per_subject = load_metrics()
+    run_dir = reader_run_dir()
+    figures = figures_dir(run_dir)
+    per_subject = load_metrics(run_dir)
     x = np.arange(len(SCALES))
 
     fig, axes = plt.subplots(1, 3, figsize=(13.0, 4.2))
@@ -65,7 +75,8 @@ def main() -> None:
     axes[0].legend(fontsize=11, frameon=False, loc="center right")
     fig.tight_layout()
     for suffix in ("svg", "png"):
-        fig.savefig(FIGURES_DIR / f"geometry_effects_separate.{suffix}", dpi=300, bbox_inches="tight", facecolor="white")
+        fig.savefig(figures / f"geometry_effects_separate.{suffix}"
+, dpi=300, bbox_inches="tight", facecolor="white")
     plt.close(fig)
 
 

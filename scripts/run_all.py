@@ -1,5 +1,9 @@
 #!/usr/bin/env python
-"""Convenience launcher for the full pipeline."""
+"""Convenience launcher for the full pipeline (stages 00-03).
+
+Outputs go to runs/<name>/ (name from --run, $HOC_RUN or "main"); a
+--subject-limit N run writes to runs/<name>__nN/ and never touches the full run.
+"""
 
 from __future__ import annotations
 
@@ -22,6 +26,8 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Forwarded to the robustness script.",
     )
+    parser.add_argument("--run", default=None, help="Run name under runs/ (default: $HOC_RUN or 'main').")
+    parser.add_argument("--overwrite", action="store_true", help="Forwarded: allow replacing finished stages.")
     return parser.parse_args()
 
 
@@ -36,6 +42,10 @@ def main() -> None:
     common_args = ["--config", args.config]
     if args.subject_limit is not None:
         common_args += ["--subject-limit", str(args.subject_limit)]
+    if args.run is not None:
+        common_args += ["--run", args.run]
+    if args.overwrite:
+        common_args.append("--overwrite")
 
     run_script("00_prepare_data.py", common_args)
 

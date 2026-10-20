@@ -18,7 +18,7 @@ Collapse tests, on each axis (log c vs log d):
      at fixed c (if the regime is set by c relative to the gap, larger gaps should mean larger effects).
   5. the same, as partial Spearman rho controlling for mean strength (and for mean strength + density
      + strength CV), since the gap covaries with overall connectivity.
-Outputs: results/revision/q1/decay_curves.csv.gz, decay_collapse.csv, decay_flips.csv,
+Outputs (runs/<name>/revision/q1/; choose the run with ``--run <name>``): decay_curves.csv.gz, decay_collapse.csv, decay_flips.csv,
 decay_flip_summary.csv, decay_gap_correlations.csv, decay_gap_partial_correlations.csv,
 fig_decay_collapse.png
 """
@@ -36,10 +36,15 @@ import pandas as pd
 from joblib import Parallel, delayed
 from scipy.stats import kruskal
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "nulls"))
-from _common import REPO_ROOT, Spectral, load_stack, random_driver_sets, spectrum_metrics  # noqa: E402
+NULLS_DIR = Path(__file__).resolve().parents[1] / "nulls"  # shared helpers: nulls/nulls_common.py
+if str(NULLS_DIR) not in sys.path:
+    sys.path.insert(0, str(NULLS_DIR))
+from nulls_common import Spectral, load_stack, random_driver_sets, spectrum_metrics  # noqa: E402
+from hoc.runs import stage_from_argv  # noqa: E402
+from hoc.utils import n_jobs  # noqa: E402
 
-OUT = REPO_ROOT / "results" / "revision" / "q1"
+ROOT: Path  # run directory (runs/<name>/), set in main()
+OUT: Path  # <run>/revision/q1, set in main()
 SCALES = (68, 114, 219)
 K_VALUES = (1, 2, 3, 5)
 C_GRID = np.logspace(-2.5, 0.5, 25)
@@ -47,7 +52,7 @@ CURVES = ("cd_q1", "cd_er", "dr_q1")
 
 
 def load_orders(scale: int) -> dict:
-    t = pd.read_csv(REPO_ROOT / "results" / "primary" / "node_scores.csv", usecols=["subject_id", "scale", "node_index", "method", "rank"])
+    t = pd.read_csv(ROOT / "primary" / "node_scores.csv", usecols=["subject_id", "scale", "node_index", "method", "rank"])
     t = t[(t["scale"] == scale) & t["method"].isin(["degree_strength", "cycle_participation"])]
     return {key: g.sort_values("rank")["node_index"].to_numpy(int) for key, g in t.groupby(["subject_id", "method"])}
 
@@ -99,15 +104,23 @@ def collapse_stats(df: pd.DataFrame, axis: str, curve: str, lo: float | None = N
 
 
 def main():
+    global ROOT, OUT
+    ctx = stage_from_argv("revision/q1/03_decay_collapse")
+    ctx.require_stage("00_prepare_data")
+    ctx.require_stage("01_primary")
+    ctx.begin()
+    ROOT = ctx.root
+    OUT = ROOT / "revision" / "q1"
+    OUT.mkdir(parents=True, exist_ok=True)
     path = OUT / "decay_curves.csv.gz"
-    if path.exists():
+    if path.exists():  # cache: reuse curves computed by an earlier run in this run directory
         df = pd.read_csv(path)
     else:
         rows = []
         for scale in SCALES:
-            stack = load_stack(scale)
+            stack = load_stack(scale, ROOT)
             orders = load_orders(scale)
-            out = Parallel(n_jobs=12)(delayed(job)(scale, si, stack[si], orders) for si in range(stack.shape[0]))
+            out = Parallel(n_jobs=n_jobs(12))(delayed(job)(scale, si, stack[si], orders) for si in range(stack.shape[0]))
             rows += [r for o in out for r in o]
             print(scale, "done", flush=True)
         df = pd.DataFrame(rows)
@@ -161,7 +174,7 @@ def main():
 
     net = []
     for s in SCALES:
-        stack = load_stack(s)
+        stack = load_stack(s, ROOT)
         for si, A in enumerate(stack):
             strength = A.sum(axis=0)
             net.append({"scale": s, "subject_id": f"sub-{si:03d}", "mean_strength": strength.mean(),
@@ -210,6 +223,7 @@ def main():
     axes[-1, 1].set_xlabel("decay ratio c/(c + λ1 − λ2)")
     fig.tight_layout()
     fig.savefig(OUT / "fig_decay_collapse.png", dpi=150)
+    ctx.finish()
 
 
 if __name__ == "__main__":

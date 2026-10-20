@@ -19,6 +19,8 @@ if str(SRC_ROOT) not in sys.path:
 from hoc.config import load_config
 from hoc.control import assemble_gramian, gramian_metrics, single_node_gramians
 from hoc.dataset import load_raw_connectomes
+from hoc.dataset import build_subject_table
+from hoc.runs import RunContext, add_run_arguments
 from hoc.io import prepare_results_tree, write_csv
 from hoc.landscape import generate_driver_sets, summarize_landscape
 from hoc.preprocessing import (
@@ -45,6 +47,7 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Also compute sampled/exhaustive landscape summaries for each sensitivity cell.",
     )
+    add_run_arguments(parser)
     return parser.parse_args()
 
 
@@ -144,13 +147,16 @@ def landscape_summary_for(
 def main() -> None:
     args = parse_args()
     config = load_config(REPO_ROOT / args.config)
-    results = prepare_results_tree(config["paths"]["results_dir"])
+    ctx = RunContext.from_args("02_robustness", args)
+    ctx.require_stage("00_prepare_data")
+    results = prepare_results_tree(ctx.root)
 
     raw_connectomes = load_raw_connectomes(config["paths"]["raw_connectomes"])
     scales = [int(scale) for scale in config["analysis"]["parcellation_scales"]]
     n_subjects = next(iter(raw_connectomes.values())).shape[2]
     if args.subject_limit is not None:
         n_subjects = min(n_subjects, args.subject_limit)
+    ctx.begin(build_subject_table(n_subjects)["subject_id"].tolist())
 
     k_values = [int(k) for k in config["analysis"]["top_k_values"]]
     sensitivity_rows: list[dict] = []
@@ -333,6 +339,8 @@ def main() -> None:
     write_csv(pd.DataFrame(sensitivity_rows), results["robustness"] / "sensitivity_summary.csv")
     if perturbation_rows:
         write_csv(pd.DataFrame(perturbation_rows), results["robustness"] / "perturbation_summary.csv")
+
+    ctx.finish()
 
 
 if __name__ == "__main__":

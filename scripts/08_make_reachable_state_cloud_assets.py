@@ -1,5 +1,12 @@
 #!/usr/bin/env python
-"""Build real-data reachable-state cloud assets for control-geometry figures/animation."""
+"""Build real-data reachable-state cloud assets for control-geometry figures/animation.
+
+Usage: python scripts/08_make_reachable_state_cloud_assets.py [--run <name>] [--scale 114] ...
+
+Reads primary/ tables from the run directory (``--run``, default $HOC_RUN or
+"main"; ``--run results`` reads the legacy tree) and writes assets to
+<run>/figures/animation_assets/ (runs/results-derived/... for the legacy tree).
+"""
 
 from __future__ import annotations
 
@@ -25,6 +32,8 @@ from hoc.config import load_config
 from hoc.control import assemble_gramian, gramian_metrics, single_node_gramians
 from hoc.dataset import load_raw_connectomes
 from hoc.preprocessing import preprocess_structural_adjacency, stabilize_adjacency
+from hoc.runs import config_variant, resolve_run_dir
+from hoc.runs import figures_dir as run_figures_dir
 from hoc.targets import build_targets
 
 
@@ -52,6 +61,11 @@ def parse_args() -> argparse.Namespace:
         help="Subject identifier like sub-014, or 'auto' for a representative subject.",
     )
     parser.add_argument("--n-samples", type=int, default=1400)
+    parser.add_argument(
+        "--run",
+        default=None,
+        help="Run name under runs/ (default: $HOC_RUN or 'main'; 'results' = legacy tree, read-only).",
+    )
     return parser.parse_args()
 
 
@@ -125,9 +139,12 @@ def main() -> None:
     args = parse_args()
     config = load_config(REPO_ROOT / args.config)
 
-    figures_dir = REPO_ROOT / config["paths"]["figures_dir"] / "animation_assets"
-    figures_dir.mkdir(parents=True, exist_ok=True)
-    results_dir = REPO_ROOT / config["paths"]["results_dir"] / "primary"
+    run_dir = resolve_run_dir(args.run, variant=config_variant(config))
+    if not run_dir.exists():
+        raise FileNotFoundError(f"Run directory {run_dir} does not exist; pass --run <name> or set $HOC_RUN.")
+    figures_dir = run_figures_dir(run_dir, "animation_assets")
+    results_dir = run_dir / "primary"
+
 
     geometry = pd.read_csv(results_dir / "geometry_metrics.csv")
     driver_sets = pd.read_csv(results_dir / "driver_sets.csv")

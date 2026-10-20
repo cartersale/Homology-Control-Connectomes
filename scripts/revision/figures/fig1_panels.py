@@ -8,10 +8,15 @@ eigenvector v1. C: drivers' loading on v1 and the resulting concentration q1. Br
 SVG so the files stay small, everything else is vector.
 
 Data: cohort-reference connectome at 114 regions, c = 0.1, k = 3 drivers.
+
+Run: python scripts/revision/figures/fig1_panels.py --run <name> [--overwrite]
+Reads runs/<name>/processed/, writes runs/<name>/paper/figs/fig1/ (a later sync step copies
+the panels into the manuscript folder).
 """
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import matplotlib as mpl
@@ -25,16 +30,23 @@ from matplotlib.patches import FancyArrowPatch
 from nilearn import datasets
 from scipy.spatial import Delaunay
 
-from hoc.preprocessing import stabilize_adjacency
-from hoc.rankings import strength_scores
-from hoc.topology import cycle_participation
+REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(REPO_ROOT / "src") not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT / "src"))
+
+from hoc.preprocessing import stabilize_adjacency  # noqa: E402
+from hoc.rankings import strength_scores  # noqa: E402
+from hoc.runs import stage_from_argv  # noqa: E402
+from hoc.topology import cycle_participation  # noqa: E402
 
 SCALE = 114
 C = 0.1
 K = 3
-OUT_DIR = Path("paper/network_neuro_resubmission/figs/fig1")
-CONNECTOME_PATH = Path(f"results/processed/connectomes_scale-{SCALE}.npz")
-ATLAS_DIR = Path("data/external/atlas_cache/atl-cammoun2012/fsaverage5")
+STAGE = "revision/figures/fig1_panels"
+# Set from the run directory in main(): <run>/paper/figs/fig1 and <run>/processed/connectomes_scale-114.npz.
+OUT_DIR: Path | None = None
+CONNECTOME_PATH: Path | None = None
+ATLAS_DIR = REPO_ROOT / "data" / "external" / "atlas_cache" / "atl-cammoun2012" / "fsaverage5"
 RESOLUTION = {68: "033", 114: "060", 219: "125"}[SCALE]
 EXCLUDED_LABELS = {"unknown", "corpuscallosum"}
 
@@ -278,7 +290,18 @@ def panel_loading_q1(a0, v1, hub_set, spread_set, n_random=1000, seed=0):
     save(fig, "fig1c_loading_q1")
 
 
+def fig1_dir(run_root: Path) -> Path:
+    """Where the Figure 1 panels and layout live inside a run directory."""
+    return Path(run_root) / "paper" / "figs" / "fig1"
+
+
 def main():
+    global OUT_DIR, CONNECTOME_PATH
+    ctx = stage_from_argv(STAGE)
+    ctx.require_stage("00_prepare_data")
+    ctx.begin()
+    OUT_DIR = fig1_dir(ctx.root)
+    CONNECTOME_PATH = ctx.root / "processed" / f"connectomes_scale-{SCALE}.npz"
     a0, _, _, v1, hub_set, spread_set = load_data()
     meshes, labels_by_hemi = load_surface()
 
@@ -287,6 +310,7 @@ def main():
     panel_v1_drivers(meshes, labels_by_hemi, v1, spread_set, SPREAD, "fig1b_v1_spread")
     panel_v1_colorbar(v1)
     panel_loading_q1(a0, v1, hub_set, spread_set)
+    ctx.finish()
 
 
 if __name__ == "__main__":

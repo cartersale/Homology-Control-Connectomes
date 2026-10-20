@@ -6,6 +6,8 @@
 (b) equal-distance intercept: median (quantile q=0.5) regression across subjects of pct on d_dist
     (cycle - degree nearest-driver distance, mm, k-averaged); intercept = predicted pct when both driver sets are
     equally far from the target. Bootstrap 95% CI (1000 resamples of subjects).
+
+Run: python scripts/revision/targets/07_proximity_controls.py --run <name> [--overwrite]  (reads/writes runs/<name>/)
 """
 
 from __future__ import annotations
@@ -17,6 +19,8 @@ import pandas as pd
 import statsmodels.formula.api as smf
 
 import common as C
+
+ctx = C.start_stage(__file__, [C.stage("02_target_energies")])
 
 warnings.filterwarnings("ignore")
 L = pd.read_csv(C.OUT / "target_energies_long.csv.gz")
@@ -58,3 +62,4 @@ out.to_csv(C.OUT / "proximity_controls.csv", index=False)
 cols = ["scale", "target_name", "no_overlap_frac_cases", "noov_n", "noov_median_pct", "noov_ci_low", "noov_ci_high", "noov_p_holm",
         "eqdist_intercept", "eqdist_ci_low", "eqdist_ci_high", "slope_pct_per_mm"]
 print(out[cols].round(3).to_string())
+ctx.finish()

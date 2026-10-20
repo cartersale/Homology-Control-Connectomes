@@ -4,6 +4,8 @@
 Grid: (c=0.1, eps in {1e-8, 1e-5, 1e-2}) and (eps=1e-5, c in {0.01, 1.0}). Driver sets unchanged
 (rankings do not depend on c or eps). Full and driver-excluded targets. Also records the fraction of each
 target's energy contributed by eigen-directions at the eps floor.
+
+Run: python scripts/revision/targets/04_sensitivity.py --run <name> [--overwrite]  (reads/writes runs/<name>/)
 """
 
 from __future__ import annotations
@@ -14,6 +16,8 @@ import numpy as np
 import pandas as pd
 
 import common as C
+
+ctx = C.start_stage(__file__, ["00_prepare_data", "01_primary", C.stage("01_build_targets")])
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 GRID = [(0.1, 1e-8), (0.1, 1e-5), (0.1, 1e-2), (0.01, 1e-5), (1.0, 1e-5)]
@@ -67,3 +71,4 @@ out = out.merge(ff, on=["scale", "c", "eps", "family", "target_name"], how="left
 out.to_csv(C.OUT / "sensitivity_summary.csv", index=False)
 key = ["net_Visual", "kw_occipital_module", "net_Default", "net_VentAttn", "net_DorsAttn", "uniform_cortical", "principal_gradient"]
 print(out[(out.variant == "full") & out.target_name.isin(key)].pivot_table(index=["target_name", "scale"], columns=["c", "eps"], values="median_pct").round(2).to_string())
+ctx.finish()

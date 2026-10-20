@@ -17,20 +17,25 @@ driver-set size k:
   degree set" account: if that account is complete, the variant should sit at
   the 50th percentile of its matched null.
 
-Output: results/revision/stability/representatives/per_subject_scale-{S}.csv and
+Output: runs/<name>/revision/stability/representatives/per_subject_scale-{S}.csv and
 score_agreement_scale-{S}.csv.
+
+Run: python scripts/revision/stability/run_representatives_all_scales.py --run <name> [--subject-limit N] [--overwrite]
+(workers default to $HOC_N_JOBS or 12).
 """
 
 from __future__ import annotations
 
 import argparse
 from concurrent.futures import ProcessPoolExecutor
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 from stability_common import (
-    OUTPUT_DIR,
+    STAGE_PREFIX,
+    output_dir,
     VARIANTS,
     BASE_SEED,
     EigenGramian,
@@ -46,13 +51,15 @@ from stability_common import (
     uniform_random_sets,
     variant_scores,
 )
+from hoc.runs import RunContext, add_run_arguments, partial_stage  # noqa: E402
+from hoc.utils import n_jobs  # noqa: E402
 
 K_VALUES = (1, 2, 3, 5, 15)
 
 
-def run_subject(args: tuple[int, int]) -> tuple[list[dict], list[dict]]:
-    scale, subject_index = args
-    adjacency = load_stack(scale)[subject_index]
+def run_subject(args: tuple[int, int, str]) -> tuple[list[dict], list[dict]]:
+    scale, subject_index, root = args
+    adjacency = load_stack(scale, root)[subject_index]
     n = adjacency.shape[0]
     scores = variant_scores(adjacency)
     degree = scores["degree"]
@@ -131,15 +138,20 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--scales", type=int, nargs="+", default=[68, 114, 219])
     parser.add_argument("--subject-limit", type=int, default=None)
-    parser.add_argument("--workers", type=int, default=12)
+    parser.add_argument("--workers", type=int, default=n_jobs(12))
+    add_run_arguments(parser)
     args = parser.parse_args()
-    out = OUTPUT_DIR / "representatives"
+    stage = partial_stage(STAGE_PREFIX + Path(__file__).stem, scales=(args.scales, [68, 114, 219]))
+    ctx = RunContext.from_args(stage, args, config_path="config/default.toml")
+    ctx.require_stage("00_prepare_data")
+    ctx.begin()
+    out = output_dir(ctx.root) / "representatives"
     out.mkdir(parents=True, exist_ok=True)
     for scale in args.scales:
-        n_subjects = load_stack(scale).shape[0]
+        n_subjects = load_stack(scale, ctx.root).shape[0]
         if args.subject_limit:
             n_subjects = min(n_subjects, args.subject_limit)
-        jobs = [(scale, s) for s in range(n_subjects)]
+        jobs = [(scale, s, str(ctx.root)) for s in range(n_subjects)]
         rows, agreement = [], []
         with ProcessPoolExecutor(args.workers) as pool:
             for r, a in pool.map(run_subject, jobs):
@@ -148,6 +160,7 @@ def main() -> None:
         pd.DataFrame(rows).to_csv(out / f"per_subject_scale-{scale}.csv", index=False)
         pd.DataFrame(agreement).to_csv(out / f"score_agreement_scale-{scale}.csv", index=False)
         print(f"scale {scale}: {len(rows)} rows")
+    ctx.finish()
 
 
 if __name__ == "__main__":

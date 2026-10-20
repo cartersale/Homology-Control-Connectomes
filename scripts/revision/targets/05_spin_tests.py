@@ -7,6 +7,8 @@ registered projection), Margulies G2 (registered). Also degree vs cycle particip
 Nulls: 10,000 spherical rotations of parcel centroids on the fsaverage5 sphere, reassigned with the Vasa (2018)
 method and, secondarily, the original Alexander-Bloch (2018) method (neuromaps.nulls.spins.gen_spinsamples),
 seed 20260423. Two-sided p = (1 + #|rho_null| >= |rho_obs|) / (1 + n_spins). The rank-divergence map is spun.
+
+Run: python scripts/revision/targets/05_spin_tests.py --run <name> [--overwrite]  (reads/writes runs/<name>/)
 """
 
 from __future__ import annotations
@@ -20,12 +22,14 @@ from scipy.stats import rankdata, spearmanr
 
 import common as C
 
+ctx = C.start_stage(__file__, ["00_prepare_data", "01_primary"])
+
 warnings.filterwarnings("ignore")
 N_SPIN = 10000
 
 
 def rank_table(scale: int) -> pd.DataFrame:
-    ns = pd.read_csv(C.REPO / "results/primary/node_scores.csv", usecols=["scale", "node_index", "method", "score"])
+    ns = pd.read_csv(C.ROOT / "primary" / "node_scores.csv", usecols=["scale", "node_index", "method", "score"])
     ns = ns[(ns.scale == scale) & ns.method.isin(C.METHODS)]
     w = ns.groupby(["node_index", "method"]).score.mean().unstack("method").sort_index()
     w["degree_rank"] = w.degree_strength.rank(ascending=False, method="min")
@@ -75,3 +79,4 @@ res = pd.DataFrame(rows)
 res.to_csv(C.OUT / "spin_tests.csv", index=False)
 pd.concat(maps_out).to_csv(C.OUT / "parcel_maps_for_spin.csv", index=False)
 print(res.round(4).to_string())
+ctx.finish()

@@ -47,6 +47,7 @@ def prepare_results_tree(results_root: str | Path) -> dict[str, Path]:
         "hub_lesion": root / "hub_lesion",
         "samples": root / "primary" / "landscape_samples",
         "metadata": root / "metadata",
+        "statistics": root / "statistics",
     }
     for path in subdirs.values():
         path.mkdir(parents=True, exist_ok=True)

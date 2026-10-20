@@ -12,6 +12,10 @@ and checks them against the library:
   (W + eps I, eigenvalues floored at eps).
 
 Cycle-participation variants reuse ``scripts/representative_stability/representative_schemes``.
+
+Paths: inputs and outputs live in a run directory (hoc.runs, ``--run <name>``). Callers pass
+the run root: ``load_stack(scale, root)`` reads ``<root>/processed``; ``output_dir(root)`` is
+``<root>/revision/stability``.
 """
 
 from __future__ import annotations
@@ -40,7 +44,7 @@ BASE_SEED = int(CONFIG["analysis"]["random_seed"])
 PRIMARY_C = float(CONFIG["control"]["primary_c"])
 PRIMARY_EPS = float(CONFIG["control"]["primary_epsilon"])
 N_RANDOM = int(CONFIG["rankings"]["n_random_rankings"])
-OUTPUT_DIR = REPO_ROOT / "results" / "revision" / "stability"
+STAGE_PREFIX = "revision/stability/"
 
 VARIANTS = ("ripser", "gudhi", "geodesic", "birth_edge")
 VARIANT_LABELS = {
@@ -51,8 +55,13 @@ VARIANT_LABELS = {
 }
 
 
-def load_stack(scale: int) -> np.ndarray:
-    return np.load(REPO_ROOT / "results" / "processed" / f"connectomes_scale-{scale}.npz")["adjacency"]
+def output_dir(root: str | Path) -> Path:
+    """Output folder of the stability analyses inside a run directory."""
+    return Path(root) / "revision" / "stability"
+
+
+def load_stack(scale: int, root: str | Path) -> np.ndarray:
+    return np.load(Path(root) / "processed" / f"connectomes_scale-{scale}.npz")["adjacency"]
 
 
 # --------------------------------------------------------------------------- control

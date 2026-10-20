@@ -2,18 +2,19 @@
 """P1-P3 of the revision plan: q1-led set tables and the W_perp test on the real connectomes.
 
 For every subject (70), scale (68/114/219), c in {0.01, 0.1, 1}, k in {1, 2, 3, 5}, evaluate:
-  - the 9 saved rankings (results/primary/node_scores.csv)
+  - the 9 saved rankings (<run>/primary/node_scores.csv)
   - cycle_resid: top-k of cycle participation residualized on strength (OLS with intercept),
     as in scripts/revision/spectra/01_compute_spectra.py
   - top_avg_ctrl (continuous-time average controllability at this c), top_modal_gu (Gu 2015),
     top_modal_ct (tau = 1), low_perron (bottom-k Perron loading), as in scripts/revision/modal/
   - the 100 primary random sets (primary seeds)
-  - the saved matched sets from results/revision/spectra/set_metrics.csv (degree_matched,
+  - the saved matched sets from <run>/revision/spectra/set_metrics.csv (degree_matched,
     spatial_matched, degree_spatial_matched; 100 each; node sets are c-independent)
 Per set: q1 = lambda1/tr W (raw W), ER, PR (eps = 1e-5 pipeline definitions), the same three
 for W_perp = P W P (Perron mode projected out), Perron loading L_S and Perron share.
 
-Output: results/revision/q1/set_q1.csv.gz (one row per set) and validation.json.
+Output: <run>/revision/q1/set_q1.csv.gz (one row per set) and validation.json, where
+<run> = runs/<name>/ (choose it with ``--run <name>``).
 """
 
 from __future__ import annotations
@@ -29,10 +30,15 @@ import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "nulls"))
-from _common import REPO_ROOT, Spectral, load_stack, random_driver_sets, spectrum_metrics  # noqa: E402
+NULLS_DIR = Path(__file__).resolve().parents[1] / "nulls"  # shared helpers: nulls/nulls_common.py
+if str(NULLS_DIR) not in sys.path:
+    sys.path.insert(0, str(NULLS_DIR))
+from nulls_common import Spectral, load_stack, random_driver_sets, spectrum_metrics  # noqa: E402
+from hoc.runs import stage_from_argv  # noqa: E402
+from hoc.utils import n_jobs  # noqa: E402
 
-OUT = REPO_ROOT / "results" / "revision" / "q1"
+ROOT: Path  # run directory (runs/<name>/), set in main()
+OUT: Path  # <run>/revision/q1, set in main()
 SCALES = (68, 114, 219)
 C_VALUES = (0.01, 0.1, 1.0)
 K_VALUES = (1, 2, 3, 5)
@@ -45,7 +51,7 @@ def top(score: np.ndarray, k: int, ascending: bool = False) -> np.ndarray:
 
 
 def load_orders(scale: int) -> dict:
-    t = pd.read_csv(REPO_ROOT / "results" / "primary" / "node_scores.csv", usecols=["subject_id", "scale", "node_index", "method", "rank", "score"])
+    t = pd.read_csv(ROOT / "primary" / "node_scores.csv", usecols=["subject_id", "scale", "node_index", "method", "rank", "score"])
     t = t[t["scale"] == scale]
     orders, scores = {}, {}
     for (sid, m), g in t.groupby(["subject_id", "method"]):
@@ -56,7 +62,7 @@ def load_orders(scale: int) -> dict:
 
 
 def load_matched(scale: int) -> dict:
-    t = pd.read_csv(REPO_ROOT / "results" / "revision" / "spectra" / "set_metrics.csv", usecols=["subject_id", "scale", "k", "family", "sample", "nodes"])
+    t = pd.read_csv(ROOT / "revision" / "spectra" / "set_metrics.csv", usecols=["subject_id", "scale", "k", "family", "sample", "nodes"])
     t = t[(t["scale"] == scale) & t["family"].isin(MATCHED)]
     out = {}
     for (sid, k), g in t.groupby(["subject_id", "k"]):
@@ -107,21 +113,30 @@ def job(scale: int, si: int, A: np.ndarray, orders: dict, scores: dict, matched:
 
 
 def main():
+    global ROOT, OUT
+    ctx = stage_from_argv("revision/q1/01_compute_q1")
+    ctx.require_stage("00_prepare_data")
+    ctx.require_stage("01_primary")
+    ctx.require_stage("revision/spectra/01_compute_spectra")
+    ctx.require_stage("revision/modal/01_compute_modal")
+    ctx.begin()
+    ROOT = ctx.root
+    OUT = ROOT / "revision" / "q1"
     OUT.mkdir(parents=True, exist_ok=True)
     frames = []
     for scale in SCALES:
-        stack = load_stack(scale)
+        stack = load_stack(scale, ROOT)
         orders, scores = load_orders(scale)
         matched = load_matched(scale)
-        out = Parallel(n_jobs=12)(delayed(job)(scale, si, stack[si], orders, scores, matched) for si in range(stack.shape[0]))
+        out = Parallel(n_jobs=n_jobs(12))(delayed(job)(scale, si, stack[si], orders, scores, matched) for si in range(stack.shape[0]))
         frames.append(pd.DataFrame([r for rows in out for r in rows]))
         print(scale, "done", flush=True)
     df = pd.concat(frames, ignore_index=True)
 
     # validation against saved results at c = 0.1 (ER from spectra/, q1_raw from modal/)
-    ref = pd.read_csv(REPO_ROOT / "results" / "revision" / "spectra" / "set_metrics.csv", usecols=["subject_id", "scale", "k", "family", "sample", "effective_rank"])
+    ref = pd.read_csv(ROOT / "revision" / "spectra" / "set_metrics.csv", usecols=["subject_id", "scale", "k", "family", "sample", "effective_rank"])
     mine = df[df["c"] == 0.1].merge(ref, on=["subject_id", "scale", "k", "family", "sample"])
-    modal = pd.read_csv(REPO_ROOT / "results" / "revision" / "modal" / "set_level_modal.csv.gz", usecols=["subject_id", "scale", "c", "k", "family", "sample", "q1_raw"])
+    modal = pd.read_csv(ROOT / "revision" / "modal" / "set_level_modal.csv.gz", usecols=["subject_id", "scale", "c", "k", "family", "sample", "q1_raw"])
     mine2 = df.merge(modal, on=["subject_id", "scale", "c", "k", "family", "sample"])
     val = {
         "er_vs_spectra_max_abs": float((mine["er"] - mine["effective_rank"]).abs().max()), "er_vs_spectra_n": len(mine),
@@ -130,6 +145,7 @@ def main():
     print(val)
     (OUT / "validation.json").write_text(json.dumps(val, indent=2))
     df.to_csv(OUT / "set_q1.csv.gz", index=False)
+    ctx.finish()
 
 
 if __name__ == "__main__":

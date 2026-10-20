@@ -1,12 +1,24 @@
 #!/usr/bin/env python
-"""Draft figure: node-level controllability vs set-level Gramian concentration."""
+"""Draft figure: node-level controllability vs set-level Gramian concentration.
+
+Reads and writes runs/<name>/revision/modal/ (choose the run with ``--run <name>``).
+"""
+import sys
 from pathlib import Path
 import numpy as np, pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-OUT = Path(__file__).resolve().parents[3] / "results" / "revision" / "modal"
+REPO_ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(REPO_ROOT / "src"))
+from hoc.runs import stage_from_argv  # noqa: E402
+
+ctx = stage_from_argv("revision/modal/03_figure")
+ctx.require_stage("revision/modal/01_compute_modal")
+ctx.require_stage("revision/modal/02_analyze_modal")
+ctx.begin()
+OUT = ctx.root / "revision" / "modal"
 d = pd.read_csv(OUT / "set_level_modal.csv.gz")
 cf = pd.read_csv(OUT / "sets_vs_random_summary.csv")
 ws = pd.read_csv(OUT / "within_subject_summary.csv")
@@ -56,3 +68,4 @@ cc.set_ylim(0, 1); cc.set_title("C  Predicting q1 within subject", loc="left", c
 cc.legend(frameon=False, fontsize=6.5, loc="lower left")
 fig.savefig(OUT / "fig_modal_draft.png", dpi=200)
 print("saved")
+ctx.finish()

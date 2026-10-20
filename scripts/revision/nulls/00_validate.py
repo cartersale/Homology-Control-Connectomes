@@ -5,21 +5,21 @@
 2. The real-network pass reproduces the saved primary numbers (spectra/set_metrics.csv:
    degree-set ER and top-1 share, random-set mean ER) at c = 0.1.
 3. Each null preserves what it claims to preserve (subject 0, every scale), with timings.
-Writes results/revision/nulls/validation.json.
+Writes runs/<name>/revision/nulls/validation.json (choose the run with ``--run <name>``).
 """
 
 from __future__ import annotations
 
 import json
 import time
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from _common import (
+from nulls_common import (
     EPSILON,
     NULL_TYPES,
-    OUT_DIR,
     SCALES,
     Spectral,
     analyze_network,
@@ -27,12 +27,17 @@ from _common import (
     load_stack,
     make_null,
     null_seed,
+    out_dir,
     random_driver_sets,
     rich_club_level,
     spectrum_metrics,
 )
 from hoc.control import assemble_gramian, gramian_metrics, single_node_gramians
 from hoc.preprocessing import stabilize_adjacency
+from hoc.runs import stage_from_argv
+
+ROOT: Path  # run directory (runs/<name>/), set in main()
+OUT_DIR: Path  # <run>/revision/nulls, set in main()
 from hoc.rankings import top_k_nodes
 
 
@@ -62,10 +67,10 @@ def check_fast_gramian(adjacency: np.ndarray, c: float = 0.1) -> dict:
 
 
 def check_primary(scale: int, n_subjects: int = 3) -> dict:
-    ref = pd.read_csv(OUT_DIR.parent / "spectra" / "set_metrics.csv", usecols=["subject_id", "scale", "k", "family", "sample", "effective_rank", "top1_share"])
+    ref = pd.read_csv(ROOT / "revision" / "spectra" / "set_metrics.csv", usecols=["subject_id", "scale", "k", "family", "sample", "effective_rank", "top1_share"])
     ref = ref[ref["scale"] == scale]
-    stack = load_stack(scale)
-    dist = centroid_distances(scale)
+    stack = load_stack(scale, ROOT)
+    dist = centroid_distances(scale, ROOT)
     worst = {"degree_er": 0.0, "degree_top1": 0.0, "random_er_mean": 0.0}
     for subj in range(n_subjects):
         A = stack[subj]
@@ -87,8 +92,8 @@ def check_primary(scale: int, n_subjects: int = 3) -> dict:
 
 
 def check_nulls(scale: int) -> dict:
-    A = load_stack(scale)[0]
-    dist = centroid_distances(scale)
+    A = load_stack(scale, ROOT)[0]
+    dist = centroid_distances(scale, ROOT)
     spec_real = Spectral(A)
     level = rich_club_level(A)
     out = {}
@@ -116,16 +121,23 @@ def check_nulls(scale: int) -> dict:
 
 
 def main():
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    global ROOT, OUT_DIR
+    ctx = stage_from_argv("revision/nulls/00_validate")
+    ctx.require_stage("00_prepare_data")
+    ctx.require_stage("revision/spectra/01_compute_spectra")
+    ctx.begin()
+    ROOT = ctx.root
+    OUT_DIR = out_dir(ROOT)
     report = {"fast_gramian": {}, "primary_reproduction": {}, "nulls": {}}
     for scale in SCALES:
-        A = load_stack(scale)[0]
+        A = load_stack(scale, ROOT)[0]
         report["fast_gramian"][scale] = check_fast_gramian(A)
         print(scale, "fast gramian", report["fast_gramian"][scale], flush=True)
         report["primary_reproduction"][scale] = check_primary(scale)
         print(scale, "primary", report["primary_reproduction"][scale], flush=True)
         report["nulls"][scale] = check_nulls(scale)
     (OUT_DIR / "validation.json").write_text(json.dumps(report, indent=2, default=float))
+    ctx.finish()
 
 
 if __name__ == "__main__":

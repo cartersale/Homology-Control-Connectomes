@@ -1,25 +1,24 @@
 #!/usr/bin/env python
 """Figure: the cycle-degree spectral difference depends on the stabilization margin c.
 
-Main figure (figures/csweep_mechanism.{svg,png})
+Main figure (<run>/figures/csweep_mechanism.{svg,png})
   A  Delta r_eff = r_eff(cycle) - r_eff(degree) vs c (half the figure width)
   B  Delta q1 = q1(degree) - q1(cycle), q1 = lambda_1 / tr W_eps
   C  R(c) = v1'W_degree v1 / v1'W_cycle v1 (= L_degree / L_cycle, constant in c)
 
-Alternative version (figures/csweep_perron_removed.{svg,png}): same A and B, with
+Alternative version (<run>/figures/csweep_perron_removed.{svg,png}): same A and B, with
   C  Delta r_eff for the full Gramian vs after projecting out the Perron vector (W_perp1 = P W P).
 
 All values are k-averaged within subject (k in {1,2,3,5}); lines are means over 70 subjects with
 95% t intervals. R(c) is a geometric mean (per-subject mean of log10 ratios over k).
-Reads results/revision/regime/perron_mode_sweep.csv.
+Reads <run>/revision/regime/perron_mode_sweep.csv, where <run> = runs/<name>/ (choose it with
+``--run <name>``).
 """
 
 from __future__ import annotations
 
-import os
+import sys
 from pathlib import Path
-
-os.environ.setdefault("MPLCONFIGDIR", "/private/tmp/matplotlib")
 
 import matplotlib
 
@@ -30,9 +29,12 @@ import pandas as pd  # noqa: E402
 from scipy import stats  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-DATA = REPO_ROOT / "results" / "revision" / "regime" / "perron_mode_sweep.csv"
-FIGURES_DIR = REPO_ROOT / "figures"
-FIGURES_DIR.mkdir(exist_ok=True)
+sys.path.insert(0, str(REPO_ROOT / "src"))
+from hoc.runs import figures_dir, stage_from_argv  # noqa: E402
+
+STAGE = "revision/regime/09_make_csweep_figure"
+DATA: Path  # set in main(): <run>/revision/regime/perron_mode_sweep.csv
+FIGURES_DIR: Path  # set in main(): <run>/figures
 
 SCALES = [68, 114, 219]
 # Ordinal scale encoding: one hue light -> dark, plus the marker shapes used in the spectra figure.
@@ -148,13 +150,20 @@ def csweep_figure(subj: pd.DataFrame, draw_c, filename: str) -> None:
 
 
 def main() -> None:
+    global DATA, FIGURES_DIR
+    ctx = stage_from_argv(STAGE)
+    ctx.require_stage("revision/regime/08_perron_mode_sweep")
+    ctx.begin()
+    DATA = ctx.root / "revision" / "regime" / "perron_mode_sweep.csv"
+    FIGURES_DIR = figures_dir(ctx.root)
     subj = per_subject(pd.read_csv(DATA))
     csweep_figure(subj, draw_ratio, "csweep_mechanism")
     csweep_figure(subj, draw_perron_removed, "csweep_perron_removed")
     table = pd.concat({col: summarize(subj, col).set_index(["scale", "c"])["mean"] for col in ("d_er", "d_er_perp1", "d_q1", "log10_R")}, axis=1)
     table["R_geomean"] = 10 ** table.pop("log10_R")
     table.round(4).to_csv(DATA.with_name("perron_mode_sweep_summary.csv"))
-    print("saved figures/csweep_mechanism.* and figures/csweep_perron_removed.*")
+    print(f"saved {FIGURES_DIR}/csweep_mechanism.* and {FIGURES_DIR}/csweep_perron_removed.*")
+    ctx.finish()
 
 
 if __name__ == "__main__":

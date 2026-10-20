@@ -14,11 +14,13 @@ stat ~ is_real + C(subject) with and without the network statistic; proportion m
 = 1 - beta_real(with) / beta_real(without). Also the median within-subject Spearman rho
 between the network statistic and the set statistic across that subject's nulls.
 
-Outputs (results/revision/nulls/): networks.csv.gz, sets.csv.gz, null_fidelity.csv,
+Outputs (runs/<name>/revision/nulls/; choose the run with ``--run <name>``): networks.csv.gz, sets.csv.gz, null_fidelity.csv,
 inference.csv, network_inference.csv, mediation.csv, summary_tables.md
 """
 
 from __future__ import annotations
+
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -26,7 +28,11 @@ import statsmodels.formula.api as smf
 from scipy.stats import spearmanr, wilcoxon
 from statsmodels.stats.multitest import multipletests
 
-from _common import OUT_DIR
+from nulls_common import out_dir
+from hoc.runs import stage_from_argv
+
+ROOT: Path  # run directory (runs/<name>/), set in main()
+OUT_DIR: Path  # <run>/revision/nulls, set in main()
 
 SET_STATS = [
     "degree_q1_pct",  # headline
@@ -236,6 +242,12 @@ def summary_tables(inf: pd.DataFrame, ninf: pd.DataFrame, fid: pd.DataFrame, med
 
 
 def main():
+    global ROOT, OUT_DIR
+    ctx = stage_from_argv("revision/nulls/02_analyze")
+    ctx.require_stage("revision/nulls/01_run_nulls")
+    ctx.begin()
+    ROOT = ctx.root
+    OUT_DIR = out_dir(ROOT)
     net, st = load_chunks()
     print("networks", net.groupby(["null", "scale"]).size().to_dict(), flush=True)
     st = add_k_averages(st)
@@ -251,6 +263,7 @@ def main():
     med.to_csv(OUT_DIR / "mediation.csv", index=False)
     (OUT_DIR / "summary_tables.md").write_text(summary_tables(inf, ninf, fid, med))
     print((OUT_DIR / "summary_tables.md").read_text())
+    ctx.finish()
 
 
 if __name__ == "__main__":

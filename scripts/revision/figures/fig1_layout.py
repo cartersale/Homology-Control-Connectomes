@@ -1,12 +1,26 @@
-"""Compose the Figure 1 panel SVGs into a full-width layout mock-up (7 in = 504 pt)."""
+"""Compose the Figure 1 panel SVGs into a full-width layout mock-up (7 in = 504 pt).
+
+Run: python scripts/revision/figures/fig1_layout.py --run <name> [--overwrite]
+Reads the panels fig1_panels.py wrote to runs/<name>/paper/figs/fig1/ and writes
+fig1_layout.svg next to them.
+"""
 
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 
-FIG_DIR = Path("paper/network_neuro_resubmission/figs/fig1")
-OUT_PATH = FIG_DIR / "fig1_layout.svg"
+REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(REPO_ROOT / "src") not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT / "src"))
+
+from hoc.runs import stage_from_argv  # noqa: E402
+
+STAGE = "revision/figures/fig1_layout"
+# Set from the run directory in main(): <run>/paper/figs/fig1 (same folder fig1_panels.py writes).
+FIG_DIR: Path | None = None
+OUT_PATH: Path | None = None
 WIDTH = 504.0
 INK = "#2b2b2b"
 MUTED = "#6f6f6a"
@@ -44,6 +58,12 @@ def text(label: str, x: float, y: float, size: float, color: str, weight: str = 
 
 
 def main() -> None:
+    global FIG_DIR, OUT_PATH
+    ctx = stage_from_argv(STAGE)
+    ctx.require_stage("revision/figures/fig1_panels")
+    ctx.begin()
+    FIG_DIR = ctx.root / "paper" / "figs" / "fig1"
+    OUT_PATH = FIG_DIR / "fig1_layout.svg"
     parts = [panel_group(*placement) for placement in PLACEMENTS]
     parts += [text(label, x, y, 11, INK, "bold") for label, x, y in LETTERS]
     parts += [text(label, x, y, 7.5, MUTED, anchor="middle") for label, x, y in CAPTIONS]
@@ -55,6 +75,7 @@ def main() -> None:
         + "\n</svg>\n"
     )
     print(OUT_PATH)
+    ctx.finish()
 
 
 if __name__ == "__main__":

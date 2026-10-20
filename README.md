@@ -33,8 +33,10 @@ animations/                       Manim scene sources for the explanatory animat
 tests/                            Unit tests for the numerical core
 ```
 
-Three directories are produced at runtime and are **not** tracked in git:
-`data/` (inputs you supply), `results/` (analysis outputs), `figures/` (rendered panels).
+Directories that are **not** tracked in git: `data/` (inputs you supply) and
+`runs/` (one folder per analysis run, including its figures). The pre-cleanup
+`results/` and `figures/` trees are kept locally as a read-only baseline
+(`baseline/PROVENANCE.md`).
 
 ### `src/hoc/`
 
@@ -92,6 +94,21 @@ data/external/atlas_cache/atl-cammoun2012/fsaverage5/*.annot
 
 Everything is driven by `config/default.toml`; every script takes `--config`.
 
+**Run directories.** Each run writes into its own folder, `runs/<name>/`. The name
+comes from `--run`, then `$HOC_RUN`, then `main`.
+- A `--subject-limit N` run always goes to `runs/<name>__nN/`, so it can't overwrite
+  a full run.
+- The 5 % variant goes to `runs/<name>/variants/fraction_5pct/`.
+- Each run folder has a `manifest.json` recording the config hash, subjects, input
+  checksums and, for each stage, the git commit, package versions and output
+  checksums.
+- A stage won't overwrite a finished stage, or mix configs or subject sets, unless
+  you pass `--overwrite`.
+- Notebooks and figure scripts read the run named by `$HOC_RUN` / `--run`, and write
+  figures to `runs/<name>/figures/`.
+- `--run results` reads the pre-cleanup `results/` tree (read-only; see
+  `baseline/PROVENANCE.md`).
+
 ```bash
 python scripts/00_prepare_data.py          # normalize connectomes, build atlas + target metadata
 python scripts/01_run_primary_analysis.py  # node scores, driver sets, energy, geometry, targets
@@ -114,7 +131,7 @@ python scripts/run_all.py --subject-limit 2 --skip-landscape --skip-perturbation
 The 5 %-of-N driver-set variant reported alongside the primary analysis. It is a
 trimmed configuration — no `k ∈ {1,2,3,5}` arm, no perturbations, and no
 `[hub_lesion]` block — so run the first three scripts directly rather than
-`run_all.py`, and note that it writes to `results/results_fraction_5pct/`:
+`run_all.py`, and note that it writes to `runs/<name>/variants/fraction_5pct/`:
 
 ```bash
 python scripts/00_prepare_data.py         --config config/landscape_fraction_5pct.toml
@@ -161,7 +178,7 @@ into `results/`, run the inferential statistics, and render the paper figures in
 
 ## Outputs
 
-Written under `results/`:
+Written under `runs/<name>/` (the pre-cleanup `results/` tree has the same layout):
 
 | Path | Contents |
 | --- | --- |
@@ -179,8 +196,8 @@ manuscript sections.
 
 ## Configuration
 
-All parameters live in `config/default.toml` and are snapshotted into
-`results/metadata/config_snapshot.toml` on every run. The primary values:
+All parameters live in `config/default.toml`. Each run copies the config into
+`runs/<name>/config/` and records its SHA-256 in `runs/<name>/manifest.json`. The primary values:
 
 | Parameter | Value | Rationale |
 | --- | --- | --- |

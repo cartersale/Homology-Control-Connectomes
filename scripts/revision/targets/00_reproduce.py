@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 """Reproduce saved primary target results with the legacy (keyword-substring) targets.
 
-Checks (1) raw target energies vs results/primary/target_energies.csv and
-(2) named-target medians / Wilcoxon p vs results/statistics/target_named_summary.csv.
+Checks (1) raw target energies vs <run>/primary/target_energies.csv and
+(2) named-target medians / Wilcoxon p vs <run>/statistics/target_named_summary.csv.
+
+Run: python scripts/revision/targets/00_reproduce.py --run <name> [--overwrite]  (reads/writes runs/<name>/)
 """
 
 from __future__ import annotations
@@ -11,6 +13,8 @@ import numpy as np
 import pandas as pd
 
 import common as C
+
+ctx = C.start_stage(__file__, ["00_prepare_data", "01_primary"])
 
 rows = []
 lookup = C.driver_lookup()
@@ -29,7 +33,7 @@ for scale in C.SCALES:
                     rows.append(dict(scale=scale, subject_id=sid, k=k, method=m, target_name=n, energy=e))
 E = pd.DataFrame(rows)
 
-saved = pd.read_csv(C.REPO / "results/primary/target_energies.csv")
+saved = pd.read_csv(C.ROOT / "primary" / "target_energies.csv")
 saved = saved[saved.selection_strategy == "static"]
 m = E.merge(saved, on=["scale", "subject_id", "k", "method", "target_name"])
 rel = np.abs(m.energy - m.target_energy) / m.target_energy
@@ -41,7 +45,7 @@ out = []
 for (scale, t), g in sub.groupby(["scale", "target_name"]):
     out.append(dict(scale=scale, target_name=t, **C.summarize(g.pct.to_numpy(), rng)))
 out = pd.DataFrame(out)
-ref = pd.read_csv(C.REPO / "results/statistics/target_named_summary.csv")
+ref = pd.read_csv(C.ROOT / "statistics" / "target_named_summary.csv")
 ref = ref[ref.metric == "pct_cycle_minus_degree"][["scale", "target_name", "median", "p_value"]]
 cmp = out.merge(ref, on=["scale", "target_name"])
 cmp["abs_diff_median"] = (cmp.median_pct - cmp["median"]).abs()
@@ -52,3 +56,4 @@ cmp.to_csv(C.OUT / "reproduction_check.csv", index=False)
 pd.DataFrame([dict(n_rows=len(m), max_rel_err=rel.max(), median_rel_err=rel.median(),
                    max_abs_median_diff=cmp.abs_diff_median.max(),
                    max_p_log10_ratio=np.abs(np.log10(cmp.p_ratio)).max())]).to_csv(C.OUT / "reproduction_energy_match.csv", index=False)
+ctx.finish()

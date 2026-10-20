@@ -7,16 +7,14 @@ Panels
   C  within-subject percentile of cycle and degree sets among the subject's 100 random sets
   D  Perron loading of the driver set vs spectral concentration (top-eigenvalue share)
 
-Reads results/revision/spectra/{spectrum_summary.csv, set_metrics.csv, tables/}.
-Writes figures/spectra_methods.{svg,png}.
+Reads runs/<name>/revision/spectra/{spectrum_summary.csv, set_metrics.csv, tables/}.
+Writes runs/<name>/figures/spectra_methods.{svg,png} (choose the run with ``--run <name>``).
 """
 
 from __future__ import annotations
 
-import os
+import sys
 from pathlib import Path
-
-os.environ.setdefault("MPLCONFIGDIR", "/private/tmp/matplotlib")
 
 import matplotlib
 
@@ -27,9 +25,12 @@ import pandas as pd  # noqa: E402
 from scipy import stats  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-SPECTRA = REPO_ROOT / "results" / "revision" / "spectra"
-FIGURES_DIR = REPO_ROOT / "figures"
-FIGURES_DIR.mkdir(exist_ok=True)
+sys.path.insert(0, str(REPO_ROOT / "src"))
+from hoc.runs import figures_dir, stage_from_argv  # noqa: E402
+
+STAGE = "revision/spectra/06_make_spectra_figure"
+SPECTRA: Path  # set in main(): <run>/revision/spectra
+FIGURES_DIR: Path  # set in main(): <run>/figures
 
 SCALES = [68, 114, 219]
 REP_SCALE, REP_K = 114, 5
@@ -175,6 +176,14 @@ def draw_perron(ax, sets: pd.DataFrame) -> None:
 
 
 def main() -> None:
+    global SPECTRA, FIGURES_DIR
+    ctx = stage_from_argv(STAGE)
+    ctx.require_stage("revision/spectra/01_compute_spectra")
+    ctx.require_stage("revision/spectra/02_analyze")
+    ctx.require_stage("revision/spectra/03_make_figure")
+    ctx.begin()
+    SPECTRA = ctx.root / "revision" / "spectra"
+    FIGURES_DIR = figures_dir(ctx.root)
     sets = load_sets()
     means = per_subject_method_means(sets)
 
@@ -205,6 +214,7 @@ def main() -> None:
         fig.savefig(FIGURES_DIR / f"spectra_methods.{suffix}", dpi=300, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     print("saved", FIGURES_DIR / "spectra_methods.png")
+    ctx.finish()
 
 
 if __name__ == "__main__":

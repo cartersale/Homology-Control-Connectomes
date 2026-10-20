@@ -7,11 +7,12 @@ For every subject, scale, c and k in {1,2,3,5}, and for the static degree and cy
   - v1' W v1, with v1 the Perron vector of A0 (analytically L_S / (2c), L_S = sum_{i in S} v1_i^2)
   - effective rank after projecting out v1: W_perp = P W P, P = I - v1 v1'
 
-Uses the eigenbasis Gramian from _common.Spectral (validated against the Lyapunov route).
+Uses the eigenbasis Gramian from regime_common.Spectral (validated against the Lyapunov route).
 In that basis W is M = K o (U_S' U_S); v1' W v1 is the Perron diagonal entry of M, and the
 spectrum of P W P is the spectrum of M with the Perron row/column removed, plus one zero.
 
-Writes results/revision/regime/perron_mode_sweep.csv (per subject x scale x c x k x method).
+Writes runs/<name>/revision/regime/perron_mode_sweep.csv (per subject x scale x c x k x method);
+choose the run with ``--run <name>``.
 """
 
 from __future__ import annotations
@@ -23,7 +24,8 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import K_VALUES, OUT_DIR, SCALES, Spectral, load_ranks, load_stack, metrics_from_eigs  # noqa: E402
+from regime_common import K_VALUES, SCALES, Spectral, load_ranks, load_stack, metrics_from_eigs, out_dir  # noqa: E402
+from hoc.runs import stage_from_argv  # noqa: E402
 
 C_VALUES = (0.01, 0.02, 0.03, 0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.7, 1.0, 2.0)
 EPSILON = 1.0e-5
@@ -52,10 +54,16 @@ def spectral_rows(spec: Spectral, c: float, driver_set: np.ndarray) -> dict:
 
 
 def main() -> None:
+    ctx = stage_from_argv("revision/regime/08_perron_mode_sweep")
+    ctx.require_stage("00_prepare_data")
+    ctx.require_stage("01_primary")
+    ctx.begin()
+    ROOT = ctx.root
+    OUT_DIR = out_dir(ROOT)
     rows = []
     for scale in SCALES:
-        stack = load_stack(scale)
-        ranks = load_ranks(scale)
+        stack = load_stack(scale, ROOT)
+        ranks = load_ranks(scale, ROOT)
         subjects = sorted({s for s, _ in ranks})
         for si, subject_id in enumerate(subjects):
             spec = Spectral(stack[si])
@@ -70,6 +78,7 @@ def main() -> None:
     print(f"max relative error, v1'Wv1 vs L/(2c): {err:.2e}")
     df.to_csv(OUT_DIR / "perron_mode_sweep.csv", index=False)
     print("saved", OUT_DIR / "perron_mode_sweep.csv")
+    ctx.finish()
 
 
 if __name__ == "__main__":

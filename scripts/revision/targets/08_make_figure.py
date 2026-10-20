@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-"""Draft revision figure for the target-state analyses -> results/revision/targets/fig_targets_draft.png"""
+"""Draft revision figure for the target-state analyses -> <run>/revision/targets/fig_targets_draft.png
+
+Run: python scripts/revision/targets/08_make_figure.py --run <name> [--overwrite]  (reads/writes runs/<name>/)
+"""
 
 from __future__ import annotations
 
@@ -11,6 +14,16 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 import common as C
+
+ctx = C.start_stage(
+    __file__,
+    [
+        C.stage("01_build_targets"),
+        C.stage("03_target_stats"),
+        C.stage("04_sensitivity"),
+        C.stage("05_spin_tests"),
+    ],
+)
 
 BLUE, ORANGE, AQUA, GRAY, INK, MUTED = "#2a78d6", "#eb6834", "#1baf7a", "#8a8984", "#0b0b0b", "#52514e"
 SCALE_COL = {68: "#2a78d6", 114: "#eb6834", 219: "#1baf7a"}
@@ -121,3 +134,4 @@ ax.legend(frameon=False, fontsize=6, loc="lower left")
 
 fig.savefig(C.OUT / "fig_targets_draft.png", dpi=200, bbox_inches="tight", facecolor="white")
 print("saved")
+ctx.finish()

@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import importlib
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -29,7 +30,9 @@ from hoc.runs import is_legacy, reader_run_dir, stage_from_argv, writable_root  
 
 MODULES = ["numbers_main", "numbers_supp"]
 STAGE = "paper/numbers"
-DEFAULT_PAPER = REPO_ROOT / "paper" / "network_neuro_resubmission"
+# The manuscript is git-ignored, so worktrees and fresh clones lack it: set
+# HOC_PAPER_DIR or pass --paper.
+DEFAULT_PAPER = Path(os.environ.get("HOC_PAPER_DIR", REPO_ROOT / "paper" / "network_neuro_resubmission"))
 
 
 def parse_args() -> argparse.Namespace:
@@ -102,6 +105,8 @@ def main() -> None:
     if ctx is not None:
         ctx.finish(outputs=written)
     if args.check:
+        if not (args.paper / "main.tex").exists():
+            sys.exit(f"--check: no main.tex in {args.paper}; pass --paper or set HOC_PAPER_DIR")
         sys.exit(1 if check(numbers, args.paper) else 0)
 
 

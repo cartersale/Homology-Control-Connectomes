@@ -1,0 +1,108 @@
+S8_nulls.tex -- notes (sources, filters, caveats, discrepancies)
+=================================================================
+Generator: /private/tmp/claude-501/-Users-cartersale-Research-projects-higher-order-connectomes/cea7c7b4-c39c-4a27-8881-388281d3a80d/scratchpad/make_s8.py (read-only pandas; re-run to regenerate).
+Root: results/revision/nulls/  (scripts/revision/nulls/00..04).
+Common design: 70 subjects x 3 scales x 50 nulls/subject x 3 nulls (strength = Maslov-Sneppen + SA on weights;
+geometric = Betzel-Bassett distance-binned swaps; weights = permute weights over the real binary edges).
+Model A = A0 - (lambda_max + c)I, infinite-horizon Gramian, eps = 1e-5. Per-subject z = (real - null mean)/null SD
+(ddof=1) against that subject's own 50 nulls; ">95th" = real > np.percentile(null, 95). Wilcoxon on the 70 z's.
+Holm family (02_analyze.py): within each (null, c_mode, stat), across scale x c_ref x k (k in 1,2,3,5,avg,avg2+;
+54 tests). k-avg = mean over k = 1,2,3,5. Gap-matched: c_null = c * gap_null / gap_real (per network), real uses c.
+Rounding: 2 decimals; counts n/70; p shown 2 dp if >= 0.1, 2 s.f. if >= 0.001, else a x 10^b.
+
+S8.1 (a) Null fidelity -- null_fidelity.csv (means over subjects and nulls). Strength r shown to 3 dp (0.998/0.999/0.999;
+  2 dp would read 1.00). "Max rel. strength err." is the mean over networks of the per-network max relative node-strength
+  error (strength null 0.16-0.27: strengths are approximate, not exact). Edge lengths in centroid units (Lausanne
+  centroid Euclidean distance; presumably mm). CAVEAT: the strength null does NOT preserve geometry: mean edge length
+  78-82 vs 58-61 real (not stated in plan's fidelity table; worth one sentence). Top-5 hub Jaccard 1.00 for strength null.
+  Degree preserved = 1.00 for all nulls (binary degree exact).
+
+S8.2 (b) lambda1/lambda2/gap -- gap_split.csv; IPR(v1) -- network_inference.csv. "Real"/"Null" = means; z~ = median z;
+  counts real > 95th / real < 5th. Bottom block: lambda1_share_of_gap_excess = MEDIAN over subjects of
+  delta_lambda1/delta_gap (stored in the delta_mean column); its two counts are NOT percentiles -- per
+  03_gap_mediators.py they are (#subjects with share > 0.5) / (#share < 0). The table caption says so.
+  Wilcoxon p (uncorrected) not printed; all lambda1/gap p <= 1e-11 (stored as 0 in the md, exact in CSV);
+  lambda2: 68 p = 0.056 (strength), 0.0066 (geo), 0.0096 (weights); 114 p <= 5e-4; 219 p ~ 0. IPR: n.s. at 219
+  (p 0.33-0.52) and at 114 for strength/weights (0.82, 0.35).
+  Also in network_inference.csv but not tabled: decay_ratio_c0.1 (real 0.20/0.17/0.20 vs null 0.31-0.39).
+
+S8.3 (c) Degree-set q1 (stat degree_q1, k = avg) -- inference.csv, all c in {0.01, 0.1, 1}, fixed and gap.
+  Real row = real mean. Per null: null mean, z~, n > 95th, p_Holm.
+
+S8.4 (d) W-perp residual -- inference.csv. Two stats:
+  S8.4a degree_q1perp_pct = percentile of the degree set's q1(perp) among the 100 random sets (k-avg). This is the
+   statistic behind REPORT.md's "median z 0.2-0.7, pct 0.74 vs 0.67-0.73". At c = 0.1: z~ 0.29-0.68 (fixed),
+   0.18-0.65 (gap); real 0.74/0.74/0.74 vs null 0.67-0.73; p_H <= 0.04.
+  S8.4b degree_q1perp = raw q1 after projecting out v1. Real vs null is essentially NULL here: c = 0.1 z~ -0.41..+0.29,
+   most p_H = 1; the 68 geometric null even has real < null (fixed p_H 0.019, gap 6e-6).
+  => "small residual real-brain excess" holds only for the percentile-among-random-sets version, not raw q1perp.
+
+S8.5 (e) Rayleigh accounting -- rayleigh/summary.csv (= medians over subjects of rayleigh/per_subject.csv; verified).
+  R_m = 1'W^(2m+1)1 / 1'W^(2m)1; R0 = mean strength (preserved by all nulls -> share exactly 0); R1 = s'Ws/s's.
+  Shares of delta-lambda1 by R2 and R3, and shares of delta-gap by R2/R3, are NOT in summary.csv: computed here as
+  median over the 70 subjects of d_R{m}/d_lambda1 (resp. /d_gap) from per_subject.csv (d_* = real - mean over that
+  subject's 50 nulls). R1 values reproduce summary.csv share_l1_R1/share_gap_R1 exactly.
+  Delta rows are medians (summary.csv) -- they differ slightly from the means in S8.2 (e.g. geometric 219: 0.52 vs 0.49).
+  rho rows = median over subjects of within-subject Spearman across that subject's 50 nulls (nulls only).
+  Pearson r(r_W, s'Ws) shown to 3 dp. SD(s's)/mean shown to 4 dp (strength null 0.0005-0.0008 = <0.1%).
+  cos(s,v1): real and null means computed from rayleigh/networks.csv.gz (simple mean over networks).
+  Slack lambda1 - R1: real 0.24/0.35/0.47 vs null 0.14-0.19.
+
+S8.6 (f) Strength assortativity -- computed here from rayleigh/networks.csv.gz (one row per network: real + 50 nulls x
+  70 subjects x 3 scales x 3 nulls). For each subject: z vs own 50 nulls (ddof=1), real > np.percentile(null,95) --
+  identical rule to 02/03 scripts. Real/Null = mean over subjects. Validation: the r_bct rows reproduce
+  gap_summary.md/mediator_contrasts.csv strength_assort exactly (means, z~, n>95th), and lambda1 recomputed this way
+  reproduces gap_split.csv exactly.
+  r_W (edge-weighted, 04_rayleigh_bound.py) real 0.40/0.46/0.37; strength null 0.06/0.03/0.00 (70/70 above 95th
+  at every scale); geometric null 0.26/0.14/0.11 (40/69/69); weight shuffle 0.14/0.15/0.14 (69/69/69).
+  r_bct (bct.assortativity_wei, binary-edge counting) real 0.14/0.21/0.19 vs null -0.03..0.05.
+
+S8.7 (g) Mediation -- mediation_noncircular.csv (03_gap_mediators.py): outcome degree-set q1 at FIXED c = 0.1 (k-avg and
+  each k) and the spectral gap; OLS stat ~ is_real (+ mediator) + C(subject); prop = 1 - beta_direct/beta_total.
+  The "strength assortativity" mediator is bct.assortativity_wei (r_bct), NOT r_W. Mediation has not been re-run
+  with r_W (plan R5 flags this as still to do). rc_bu/rc_wu = binary/weighted rich club at the 90th-pct degree;
+  rc_wu_p75/85/95 = weighted (Opsahl) rich club at those real-degree percentiles; wdeg_top_share = weight share of
+  top-20%-degree nodes; wdeg_rho = weight-degree correlation; hub_strength_frac = top-5-strength hub-to-hub share
+  (flagged circular=True in the CSV: same nodes as the k = 5 degree set). Binary rich club under the weight-shuffle
+  null is identical real vs null, so it is skipped ("--").
+  hub_strength_frac q1 values are identical in mediation.csv (02_analyze.py) at fixed c = 0.1 (0.62-0.93).
+  mediation.csv additionally has c = 0.01/1 and gap-matched rows; the gap-matched proportions are unstable
+  (e.g. hub share -11.13 to 13.07 at c = 0.1) because the total effect is ~0 -- not tabled.
+  k = 1 row: total effect ~0, so proportions are meaningless (6.21, 69.56, -14.54 ...); shown with beta_total.
+  Within-subject rho (nulls only, Spearman of mediator vs outcome across 50 nulls, median over subjects):
+  q1 0.01-0.15; gap 0.10-0.28.
+S8.8 (g, rejected mediators real vs null) -- mediator_contrasts.csv (same as gap_summary.md A2 block).
+
+S8.9 (h) Cycle - degree ER and q1 at 114 (k-avg) -- inference.csv stats cycle_minus_degree_er / _q1, c in {0.01, 0.1, 1},
+  fixed and gap. Real 0.98 vs null 0.35-0.51 (fixed c = 0.1, p_H <= 1.7e-9) and 1.09-1.18 (gap-matched; geometric
+  p_H 3.1e-4 with real BELOW null, others n.s.).
+  CAVEAT: at c = 0.1 fixed the real cycle - degree q1 (-0.21) is MORE negative than null (-0.13), i.e. the cycle set
+  loses more concentration relative to degree in the real brain; n > 95th is therefore small and z negative.
+
+Discrepancies vs paper/planning/revision_plan.md (R5, "Null networks")
+----------------------------------------------------------------------
+1. Gap "44-66 of 70 subjects above the 95th null percentile (strength and geometric nulls)" (also REPORT.md):
+   actual strength 38/66/51, geometric 44/58/59 -> range 38-66 (the 68-region strength null is 38/70).
+2. Rayleigh R1 share, weight-shuffle null "0.53 / 0.42 / 0.37": per-subject median is 0.5248 -> 0.52 / 0.42 / 0.37.
+3. lambda2 "at null level at 68 and 114 (Delta -0.02 to +0.06)": the deltas are right, but at 114 lambda2 is
+   significantly above null (z~ 0.60-0.90, Wilcoxon p <= 5e-4, 14-20/70 above 95th). Only 68 is at null level.
+4. "Real r = 0.14 / 0.21 / 0.19 vs approx 0 in every null" is the bct statistic. With the edge-weighted r_W that the
+   plan now recommends, real is 0.40/0.46/0.37 and nulls are NOT ~0 for geometric (0.26/0.14/0.11) and weight
+   shuffle (0.14/0.15/0.14); only the strength null is ~0. Median z with r_W 1.87-6.81; 40-70/70 above 95th.
+   Text quoting r values must say which statistic.
+5. W-perp "small residual real-brain excess in every null (median z 0.2-0.7)" refers to the percentile-among-random-
+   sets statistic; raw q1perp shows no consistent excess (S8.4b). Wording should specify.
+6. Null-fidelity table in plan: weight shuffle "strength r ~0.25-0.29" -> actual 0.29/0.24/0.28 (0.24-0.29).
+   Strength null strengths are approximate (max rel. error 0.16-0.27) and edge lengths are not preserved (78-82 vs 58-61).
+7. Plan states rho(R1-share) etc. correctly otherwise: R1 strength 0.60/0.43/0.36; R2 1.03/0.87/0.77; R3 1.12/1.02/0.95;
+   geometric R1 0.75/0.49/0.39; R1 gap share 0.56/0.50/0.68; rho(r_W, lambda1) strength 0.64-0.71 vs bct 0.17-0.29;
+   Pearson r_W vs s'Ws 0.998-0.999; s's SD < 0.1%; cos(s,v1) 0.82/0.76/0.69 real vs 0.77/0.79/0.78 strength null --
+   all confirmed. Degree-set q1 (0.77/0.77/0.72 vs 0.61-0.71 fixed; 0.69-0.79 gap-matched), lambda1 values/z/counts,
+   lambda1 gap-share 0.81-0.85/1.13-1.16/1.68-1.87, mediation proportions (0.47/0.65/0.74; 0.44/0.39/0.39;
+   0.32/0.22/0.08; gap 0.33-0.69; k = 2-5 0.06-0.87; hub share 0.62-0.93), rejected mediators <= 0.25,
+   within-subject rho 0.01-0.28, cycle - degree ER 0.98 vs 0.35-0.51 / 1.09-1.18, and the 68 geometric gap-matched
+   reversal (0.79 vs 0.77, p_H 0.015) -- all confirmed.
+
+Missing / not computable
+- No per-null-network r_W mediation (needs re-run of 03 with r_W).
+- Wilcoxon p for r_W real vs null not computed (z and counts given instead); could be added from networks.csv.gz.

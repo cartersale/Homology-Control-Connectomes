@@ -1,0 +1,97 @@
+c,scale,sets,pooling,rho
+0.01,68,"all families, all k",pooled,0.560766884090875
+0.01,68,"all families, k>=2",pooled,0.8802958274085071
+0.01,68,"rankings+random (no cf/matched), all k",pooled,0.11632185388592094
+0.01,68,"rankings+random, k>=2",pooled,0.7157463514826733
+0.01,68,"all families, all k",within-subj median,0.5408772835728473
+0.01,68,"all families, k>=2",within-subj median,0.8685716769408318
+0.01,68,"all families, k=1",within-subj(k) median,-0.49523801905518333
+0.01,68,"all families, k=2",within-subj(k) median,0.8330716877478227
+0.01,68,"all families, k=3",within-subj(k) median,0.9560480330383687
+0.01,68,"all families, k=5",within-subj(k) median,0.9943304747843846
+0.01,114,"all families, all k",pooled,0.4539973242417224
+0.01,114,"all families, k>=2",pooled,0.7985106564600217
+0.01,114,"rankings+random (no cf/matched), all k",pooled,-0.00019964163247342538
+0.01,114,"rankings+random, k>=2",pooled,0.5578377812545877
+0.01,114,"all families, all k",within-subj median,0.4676978295583619
+0.01,114,"all families, k>=2",within-subj median,0.8303591857791228
+0.01,114,"all families, k=1",within-subj(k) median,-0.665371834602938
+0.01,114,"all families, k=2",within-subj(k) median,0.7601181073140961
+0.01,114,"all families, k=3",within-subj(k) median,0.9214984044673004
+0.01,114,"all families, k=5",within-subj(k) median,0.9824752508922596
+0.01,219,"all families, all k",pooled,0.32010525608352763
+0.01,219,"all families, k>=2",pooled,0.6637031169351397
+0.01,219,"rankings+random (no cf/matched), all k",pooled,-0.1450669241005192
+0.01,219,"rankings+random, k>=2",pooled,0.32247821286203593
+0.01,219,"all families, all k",within-subj median,0.31802679377764936
+0.01,219,"all families, k>=2",within-subj median,0.661743892527143
+0.01,219,"all families, k=1",within-subj(k) median,-0.7697210551915674
+0.01,219,"all families, k=2",within-subj(k) median,0.28080767470765544
+0.01,219,"all families, k=3",within-subj(k) median,0.7840909999745997
+0.01,219,"all families, k=5",within-subj(k) median,0.9448980116589645
+0.01,all,"all families, all k",pooled,0.4600544146325111
+0.01,all,"all families, k>=2",pooled,0.7997180779010368
+0.1,68,"all families, all k",pooled,0.032658218621390976
+0.1,68,"all families, k>=2",pooled,0.3102143959439153
+0.1,68,"rankings+random (no cf/matched), all k",pooled,-0.26722535846752776
+0.1,68,"rankings+random, k>=2",pooled,0.14729835060096072
+0.1,68,"all families, all k",within-subj median,-0.05275430608239563
+0.1,68,"all families, k>=2",within-subj median,0.24028306766586718
+0.1,68,"all families, k=1",within-subj(k) median,-0.8859013922296294
+0.1,68,"all families, k=2",within-subj(k) median,0.15261002559045622
+0.1,68,"all families, k=3",within-subj(k) median,0.7986960353399741
+0.1,68,"all families, k=5",within-subj(k) median,0.9499061291975457
+0.1,114,"all families, all k",pooled,-0.059978907416602355
+0.1,114,"all families, k>=2",pooled,0.1762297636577002
+0.1,114,"rankings+random (no cf/matched), all k",pooled,-0.3189140886016154
+0.1,114,"rankings+random, k>=2",pooled,0.027610264951542302
+0.1,114,"all families, all k",within-subj median,-0.17475226324142684
+0.1,114,"all families, k>=2",within-subj median,0.022467380334353547
+0.1,114,"all families, k=1",within-subj(k) median,-0.8669623416298557
+0.1,114,"all families, k=2",within-subj(k) median,-0.1410060884529579
+0.1,114,"all families, k=3",within-subj(k) median,0.5153900161060028
+0.1,114,"all families, k=5",within-subj(k) median,0.8818389069982518
+0.1,219,"all families, all k",pooled,-0.18791256103471354
+0.1,219,"all families, k>=2",pooled,-0.005882257054514639
+0.1,219,"rankings+random (no cf/matched), all k",pooled,-0.36917799194946754
+0.1,219,"rankings+random, k>=2",pooled,-0.09159849697974778
+0.1,219,"all families, all k",within-subj median,-0.2603218877723718
+0.1,219,"all families, k>=2",within-subj median,-0.07317241236677915
+0.1,219,"all families, k=1",within-subj(k) median,-0.8712285725656077
+0.1,219,"all families, k=2",within-subj(k) median,-0.3620229251643607
+0.1,219,"all families, k=3",within-subj(k) median,0.3524711202832299
+0.1,219,"all families, k=5",within-subj(k) median,0.7545203468912898
+0.1,all,"all families, all k",pooled,-0.04963709705546811
+0.1,all,"all families, k>=2",pooled,0.1846028344810989
+1.0,68,"all families, all k",pooled,-0.24285155061322727
+1.0,68,"all families, k>=2",pooled,-0.08681149730455971
+1.0,68,"rankings+random (no cf/matched), all k",pooled,-0.3868355827878229
+1.0,68,"rankings+random, k>=2",pooled,-0.1010402099665331
+1.0,68,"all families, all k",within-subj median,-0.33095101179571046
+1.0,68,"all families, k>=2",within-subj median,-0.15210289846314276
+1.0,68,"all families, k=1",within-subj(k) median,-0.9297029819924905
+1.0,68,"all families, k=2",within-subj(k) median,0.40543107157646185
+1.0,68,"all families, k=3",within-subj(k) median,0.5873138675825298
+1.0,68,"all families, k=5",within-subj(k) median,0.6911777256633379
+1.0,114,"all families, all k",pooled,-0.24153624878930116
+1.0,114,"all families, k>=2",pooled,-0.08939236799081232
+1.0,114,"rankings+random (no cf/matched), all k",pooled,-0.38266325976212656
+1.0,114,"rankings+random, k>=2",pooled,-0.11351126730181832
+1.0,114,"all families, all k",within-subj median,-0.31890893760000516
+1.0,114,"all families, k>=2",within-subj median,-0.19203460526125887
+1.0,114,"all families, k=1",within-subj(k) median,-0.837248394465055
+1.0,114,"all families, k=2",within-subj(k) median,0.17484043003109162
+1.0,114,"all families, k=3",within-subj(k) median,0.4422641520900702
+1.0,114,"all families, k=5",within-subj(k) median,0.6240408445846062
+1.0,219,"all families, all k",pooled,-0.2861412982329263
+1.0,219,"all families, k>=2",pooled,-0.153438621955579
+1.0,219,"rankings+random (no cf/matched), all k",pooled,-0.37843817179814104
+1.0,219,"rankings+random, k>=2",pooled,-0.12401926854646342
+1.0,219,"all families, all k",within-subj median,-0.3221376544348042
+1.0,219,"all families, k>=2",within-subj median,-0.20576752565186596
+1.0,219,"all families, k=1",within-subj(k) median,-0.8062342640516003
+1.0,219,"all families, k=2",within-subj(k) median,0.022878485398750696
+1.0,219,"all families, k=3",within-subj(k) median,0.3956807978623352
+1.0,219,"all families, k=5",within-subj(k) median,0.5421786854059079
+1.0,all,"all families, all k",pooled,-0.23648167090931663
+1.0,all,"all families, k>=2",pooled,-0.08842732487179944

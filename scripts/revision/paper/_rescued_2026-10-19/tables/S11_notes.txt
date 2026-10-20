@@ -1,0 +1,64 @@
+S11_lesion.tex -- notes
+========================
+Generator (read-only): scratchpad/scripts/make_s10_s11.py. Sources relative to results/revision/lesion/.
+
+Settings (REPORT.md Methods): c = 0.1 re-applied to each lesioned (N-h)x(N-h) adjacency
+(A = A0 - (lmax + c)I), infinite-horizon Gramian, eps = 1e-5 floor, k in {1,2,3,5}, h in {5,10,15},
+3 scales, 70 subjects. Lesions: top-h degree strength; top-h cycle participation (both on the intact
+connectome); h uniformly random nodes (100 draws per subject x scale x h, averaged within subject).
+Static protocol (paper's, primary): drivers = top-k SURVIVING nodes by the intact ranking, same identities
+evaluated intact vs lesioned. Because k <= 5 <= h, a lesion targeting a strategy's own ranking displaces all
+of its primary drivers, so the comparison is always between replacement sets (degree ranks h+1..h+k).
+Recompute protocol: intact set = top-k intact; lesioned set = top-k by ranking recomputed on lesioned graph.
+Loss = intact - lesioned (positive = degradation). Per subject: average over k, then draws; "pooled" =
+subject mean over the 9 scale x h cells. D = cycle loss - degree loss (D > 0 = cycle sets degrade more).
+Stats: bootstrap 95% CI of mean (10,000), Wilcoxon signed-rank, rank-biserial; Holm within metric x
+protocol family of 30 (27 cells + 3 pooled); interactions Holm in a separate family of 30.
+
+S11.1 3x2 summary: summary_3x2.csv (protocol = static): dER, dPR, dPct_ER, dPct_PR.
+  Percentile losses are stored as fractions (0-1) in the CSV; shown x100 (percentile points, 1 dp).
+  Percentile loss = percentile of the strategy set among 100 random k-sets from surviving nodes (intact)
+  minus the same in the lesioned network. Excess and ER/N variants are in the CSV (not tabulated; ER/N is
+  argued against in REPORT.md because ER of random 1-5-node sets is ~3.2 at all scales).
+S11.2 Crossover tests: crossover_stats.csv, protocol = static, scale = pooled; metrics dER, dPR,
+  dPct_ER, dPct_PR (pct rows x100). Matches REPORT.md "Crossover tests" table.
+S11.3 Holm-significant cells: COMPUTED by me from crossover_stats.csv: for each metric x lesion, the
+  9 non-pooled (scale, h) rows with p_holm < 0.05, split by sign of mean D. Reproduces the REPORT.md
+  table exactly (ER 8/0/0; PR 7/0/1; ER excess 8/0/0; ER pct 7/0/0; PR pct 6/4/1; ER/N 9/6/9 with the
+  6 cycle-lesion cells of opposite sign, D < 0).
+S11.4 Protocol dependence: crossover_stats.csv pooled rows (mean_degree, mean_cycle, mean D, n_pos,
+  p_holm) for static and recompute, ER and PR.
+S11.5 Absolute post-lesion ER: COMPUTED by me from per_subject_degradation.csv (columns
+  intact_effective_rank, lesioned_effective_rank, already averaged over k and draws). Per subject:
+  D = lesioned ER(cycle set) - lesioned ER(degree set), averaged over h (per scale) or over scale x h
+  (pooled); n(D>0)/70; two-sided Wilcoxon, UNCORRECTED. Intact/lesioned columns = means over subjects x
+  (scale) x h. Pooled static values reproduce REPORT.md (+0.072, 45/70, p = 1.5e-3; +0.731, 69/70;
+  +0.812, 70/70) and the intact levels 3.64 (degree ranks h+1..h+k) vs 3.36 (cycle) -> 3.37 vs 3.44.
+  New in this table: per-scale breakdown (degree-lesion advantage absent at 219: -0.01, 33/70, p = 0.83)
+  and the recompute protocol (not in REPORT.md).
+  Note: under the static protocol the "intact ER" differs between lesion types because the evaluated
+  identities (surviving top-k) differ; under recompute the intact set is the true top-k (degree 2.40,
+  cycle 3.27).
+S11.6 Energy-size diagnostics: energy_size_diagnostics.csv (static). Floor fraction shown = mean of the
+  two strategies' frac_floor_intact / frac_floor_lesioned (my averaging; report_snippets.md "energy" table
+  shows slightly different values, e.g. 0.700 vs my 0.702 at 68/cycle/5, so its averaging differs).
+  dlog10E per strategy, ref_dlog10E (random sets), size_pred = log10((N-h)/N) from the CSV.
+  Correlations r = 0.989 and 0.975 are quoted from report_snippets.md "energy_corr" (not recomputed).
+  Pooled cyc - deg dlog10E with Holm p from crossover_stats.csv (metric dlog10E). Effect <= 0.0024 log10
+  (10^0.0024 = 1.0055, i.e. ~0.55% of E; REPORT.md says "under 0.3%", which understates it slightly);
+  "significant" only because variance is tiny.
+
+Caveats to carry
+  - Verdict in REPORT.md: "muddy"; move to supplement and drop the "greater robustness" claim.
+  - Cycle-lesion reciprocal effect exists only in percentile units (ER-pct +3.6 points, p_H = 0.019;
+    PR-pct +5.2, p_H = 7.6e-6), ~1/5 of the degree-lesion effect; raw ER/PR show none.
+  - Under recompute, degree sets GAIN ER after degree lesions (loss -0.95), reversing the sign of D (+0.79, 70/70).
+  - Energy (E_avg) changes are a network-size / floor-count effect; REPORT recommends removing the
+    lesion "cost-geometry dissociation" sentence (main.tex sec. 2.4).
+  - Reproduction: static degree-lesion rows match results/hub_lesion/geometry_degradation.csv
+    (5,040 rows, max |diff| 5e-14 ER/PR).
+
+Discrepancies with paper/planning/revision_plan.md
+  - Plan S11 row: "mixed verdict; include it or explain in the response" -- consistent with REPORT.md
+    ("Muddy"). The plan gives no lesion numbers, so nothing to contradict. Plan also says "No hub-lesion
+    clinical framing" -- consistent.

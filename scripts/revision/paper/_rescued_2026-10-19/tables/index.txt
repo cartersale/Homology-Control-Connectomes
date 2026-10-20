@@ -1,0 +1,60 @@
+S4_1	26 rows	\begin{tabular}{lcccccccc}	% ==== S4a: epsilon sweep, energy and floor ====
+S4_2	14 rows	\begin{tabular}{lcccccccc}	% ==== S4b: floor definitions, Delta E, landscape ====
+S4_3	18 rows	\begin{tabular}{lcccccc}	% ==== S4c: ER/PR across eps ====
+S4_4	11 rows	\begin{tabular}{llccccccc}	% ==== S4d: q1 vs eps ====
+S4_5	46 rows	\begin{tabular}{lcccccc}	% ==== S4e: lambda_min / lambda_max by criterion ====
+S5_1	29 rows	\begin{tabular}{llcccccc}	% ==== S5a: finite horizon ====
+S5_2	15 rows	\begin{tabular}{lcccccc}	% ==== S5b(i): c sweep, cycle - degree ER / PR ====
+S5_3	15 rows	\begin{tabular}{lcccccc}	% ==== S5b(i'): c sweep, degree - random ER / PR ====
+S5_4	27 rows	\begin{tabular}{lccccccccc}	% ==== S5b(ii): c sweep, q1 ====
+S5_5	7 rows	\begin{tabular}{llccccc}	% ==== S5c(i): sign-flip points ====
+S5_6	13 rows	\begin{tabular}{llcc}	% ==== S5c(ii): per-k ER sign flips ====
+S5_7	5 rows	\begin{tabular}{llcccccc}	% ==== S5c(iii): per-subject flip points (decay grid) ====
+S5_8	13 rows	\begin{tabular}{llcccc}	% ==== S5d: decay-ratio collapse ====
+S5_9	23 rows	\begin{tabular}{lccccccccc}	% ==== S5e: gap-effect correlations ====
+S5_10	25 rows	\begin{tabular}{llcccccc}	% ==== S5f: large k ====
+S5_11	8 rows	\begin{tabular}{llcccccc}	% ==== S5g: nctpy equivalence ====
+S6_1	100 rows	\begin{tabular}{lccccccccc}	% ==== S6-q1: criteria vs random ====
+S6_2	100 rows	\begin{tabular}{lccccccccc}	% ==== S6-er: criteria vs random ====
+S6_3	100 rows	\begin{tabular}{lccccccccc}	% ==== S6-pr: criteria vs random ====
+S6_4	49 rows	\begin{tabular}{lccccccccc}	% ==== S6-matched-q1 ====
+S6_5	49 rows	\begin{tabular}{lccccccccc}	% ==== S6-matched-er ====
+S6_6	49 rows	\begin{tabular}{lccccccccc}	% ==== S6-matched-pr ====
+S7_1	17 rows	\begin{tabular}{llccc}\toprule	% ---- tab:S7_nodelevel
+S7_2	26 rows	\begin{tabular}{lccccccccc}\toprule	% ---- tab:S7_withinsubj
+S7_3	11 rows	\begin{tabular}{ccccccccccc}\toprule	% ---- tab:S7_drivergram
+S7_4	11 rows	\begin{tabular}{cccccccccc}\toprule	% ---- tab:S7_comm_geo
+S7_5	20 rows	\begin{tabular}{lccccccccc}\toprule	% ---- tab:S7_modal_sets
+S7_6	7 rows	\begin{tabular}{lccccccccc}\toprule	% ---- tab:S7_rankedpred
+S7_7	11 rows	\begin{tabular}{lccccccccc}\toprule	% ---- tab:S7_coverage
+S7_8	11 rows	\begin{tabular}{cccccccc}\toprule	% ---- tab:S7_coverage_rho
+S7_9	31 rows	\begin{tabular}{llcccc}\toprule	% ---- tab:S7_hubloading
+S7_10	6 rows	\begin{tabular}{lccc}\toprule	% ---- tab:S7_assortcorr
+S7_11	15 rows	\begin{tabular}{lccccccccc}\toprule	% ---- tab:S7_LS_q1
+S8_1	13 rows	\begin{tabular}{llrrrrrrr}	% ---- Table S8.1: null fidelity (means over subjects and 50 nulls/subject)
+S8_2	18 rows	\begin{tabular}{llrrrrrrrrrrrr}	% ---- Table S8.2: lambda1, lambda2, gap, IPR(v1): real vs each null (mean); median per-subject z; n above 95th / below 5th null pct; Wilcoxon p on z 
+S8_3	23 rows	\begin{tabular}{lllrrrrrrrrrrrr}	% ---- Table S8.3: degree-set q1 (k-avg over k=1,2,3,5), real vs null mean, fixed and gap-matched c
+S8_4	23 rows	\begin{tabular}{lllrrrrrrrrrrrr}	% ---- Table S8.4a: W-perp residual -- percentile of degree-set q1(perp) among 100 random sets (k-avg)
+S8_5	23 rows	\begin{tabular}{lllrrrrrrrrrrrr}	% ---- Table S8.4b: W-perp residual -- raw degree-set q1(perp) (k-avg)
+S8_6	54 rows	\begin{tabular}{llrrr}	% ---- Table S8.5: Rayleigh accounting of the real-null lambda1 excess (medians over 70 subjects of per-subject quantities)
+S8_7	8 rows	\begin{tabular}{llrrrrrrrrrrrr}	% ---- Table S8.6: strength assortativity real vs null; r_W = edge-weighted (04_rayleigh_bound.py), r_bct = bct.assortativity_wei(flag=0). Computed he
+S8_8	30 rows	\begin{tabular}{llrrrrrrrrr}	% ---- Table S8.7: proportion mediated (1 - beta_direct/beta_total; OLS with subject fixed effects); c = 0.1 fixed
+S8_9	32 rows	\begin{tabular}{llrrrrrrrrrrrr}	% ---- Table S8.8: candidate mediators, real vs null (mean); median z; n above 95th null pct
+S8_10	23 rows	\begin{tabular}{lllrrrrrrrr}	% ---- Table S8.9: cycle - degree ER and q1 at 114 regions (k-avg), real vs null, fixed vs gap-matched c
+S10_1	30 rows	\begin{tabular}{lrcrrcrrcr}	% ===== Table S10.1: named targets, full targets =====
+S10_2	30 rows	\begin{tabular}{lrcrrcrrcr}	% ===== Table S10.2: named targets, drivers excluded =====
+S10_3	14 rows	\begin{tabular}{lccc}	% ===== Table S10.3: driver-target overlap (fraction of subject x k cases with >=1 driver inside target; cycle / degree) =====
+S10_4	31 rows	\begin{tabular}{llrcrrcc}	% ===== Table S10.4: proximity. dDist = cyc-deg target-mass-weighted distance to nearest driver (mm), k-avg; rho across 70 subjects (Spearman); interc
+S10_5	7 rows	\begin{tabular}{llrcccc}	% ===== Table S10.5: single-parcel targets =====
+S10_6	41 rows	\begin{tabular}{llrrrrr}	% ===== Table S10.6a: eps/c sensitivity, full; median pct, * = Holm p<0.05 (Holm within scale x family x condition) =====
+S10_7	41 rows	\begin{tabular}{llrrrrr}	% ===== Table S10.6b: eps/c sensitivity, drivers_excluded; median pct, * = Holm p<0.05 (Holm within scale x family x condition) =====
+S10_8	10 rows	\begin{tabular}{llccc}	% ===== Table S10.7: fraction of target energy carried by eigen-directions at the eps floor (c = 0.1) =====
+S10_9	25 rows	\begin{tabular}{lllrccc}	% ===== Table S10.8: spin tests (10,000 rotations; Vasa primary, Alexander-Bloch secondary); two-sided p =====
+S10_10	8 rows	\begin{tabular}{lccc}	% ===== Table S10.9: mean rank divergence (degree rank - cycle rank; + = cycle priority) by Yeo-7 network; n parcels; Vasa spin p (uncorrected) =====
+S10_11	43 rows	\begin{tabular}{llr p{12cm}}	% ===== Table S10.10: exact parcels per mask. Format: base region (L idx; R idx); 'L'/'R' alone = unsubdivided parcel at scale 68 =====
+S11_1	5 rows	\begin{tabular}{lrrrrrrrr}	% ===== Table S11.1: static protocol, mean loss (intact - lesioned) per subject pooled over scale, h in {5,10,15}, k in {1,2,3,5}; c=0.1, eps=1e-5. Pe
+S11_2	17 rows	\begin{tabular}{llrcccr}	% ===== Table S11.2: crossover tests on pooled D = cycle loss - degree loss (static). D>0 = cycle sets degrade more. Bootstrap 95% CI of mean; Wilcoxo
+S11_3	7 rows	\begin{tabular}{lccc}	% ===== Table S11.3: number of Holm-significant (p_H<0.05) scale x h cells out of 9, by sign of D (static); computed from crossover_stats.csv =====
+S11_4	8 rows	\begin{tabular}{llrrrcc rrrcc}	% ===== Table S11.4: protocol dependence. Mean ER and PR loss (pooled) under static vs recompute protocols; D = cycle - degree with n(D>0)/70 and Holm
+S11_5	25 rows	\begin{tabular}{lllcccc}	% ===== Table S11.5: absolute post-lesion ER. Mean lesioned ER (degree / cycle sets) and per-subject D = ER_cyc - ER_deg after lesion, averaged over h
+S11_6	30 rows	\begin{tabular}{llrccccc}	% ===== Table S11.6: lesioned - intact log10 E_avg (static protocol) vs size prediction log10((N-h)/N); floor fraction = fraction of W+eps*I eigenvalu

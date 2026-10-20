@@ -1,0 +1,82 @@
+S10_targets.tex -- notes
+=========================
+Generator (read-only): scratchpad/scripts/make_s10_s11.py (pandas; no repo file modified).
+All source paths are relative to results/revision/targets/.
+
+Common settings (from REPORT.md sec. 3): model A = A0 - (lmax + c)I, infinite-horizon Gramian,
+saved static top-k degree_strength / cycle_participation driver sets (results/primary/driver_sets.csv),
+W_eps = W + eps*I with eigenvalues floored at eps; E = x*' W_eps^-1 x*.
+Primary c = 0.1, eps = 1e-5, k in {1,2,3,5}, 70 subjects. pct = 100 (E_cyc - E_deg)/E_deg per subject,
+averaged over k. Negative pct = cycle sets cheaper. Medians across subjects; n_-/n_+ = subjects
+negative/positive out of 70; two-sided Wilcoxon; Holm within scale x target family x variant
+(families: landmark 4, keyword_module 3, yeo7_network 10, distributed {G1, G1 bipolar, uniform},
+distributed_supp {G2, G2 bipolar}, legacy 4). Medians shown to 2 decimals in percent units
+(REPORT.md shows 1 decimal; values identical after rounding). p values are exact from CSV, 2 s.f.
+
+S10.1 / S10.2 Named targets, full and drivers-excluded
+  Source: named_target_summary.csv (variant = full / drivers_excluded; columns median_pct,
+  n_negative, n_positive, p_holm). "Drivers excluded" = x* zeroed on the union of both methods'
+  driver sets for that subject/k, renormalized, both energies recomputed.
+  Legacy rows (old occipital incl. precuneus; legacy association-vs-occipital; misregistered G1)
+  are included for comparison; Holm for them is within the "legacy" family. Bootstrap CIs and
+  rank-biserial r exist in the CSV (not tabulated, to keep width).
+  Yeo-17 targets are in REPORT.md sec. 5 / named_target_summary.csv (family yeo17_network), not tabulated.
+  Caveat: at 68 regions DorsAttn = 2 parcels (bilateral superior parietal) and FrontoParietal = 3 parcels;
+  treat them as near-landmarks.
+
+S10.3 Driver-target overlap
+  Source: driver_target_overlap.csv, frac_any_driver_in_cyc / frac_any_driver_in_deg
+  = fraction of (subject, k) cases with >= 1 driver inside supp(x*). Mean mass on drivers and mean #
+  drivers inside are also in that CSV (and per k in driver_target_overlap_by_k.csv).
+
+S10.4 Proximity
+  Sources: named_target_summary.csv (full; median_d_dist_mm, n_subj_cycle_closer, rho_pct_vs_ddist,
+  rho_pct_vs_dcoupling) and proximity_controls.csv (eqdist_intercept + bootstrap CI, 1,000 resamples;
+  noov_* = no-overlap subset, Holm p). Distance D(S,x) = sum_i x_i^2 min_s ||c_i - c_s|| (mm) on
+  fsaverage5 midthickness centroids; coupling = sum_i x_i^2 sum_{s in S} A0[i,s].
+  MISSING: proximity_controls.csv has no rows for second_gradient (G2) -> shown as "--"/"not computed".
+  No-overlap subset reported only when >= 20 subjects contribute.
+
+S10.5 Single-parcel targets: single_parcel_summary.csv (BH within scale). The 68-scale full CI
+  (-1.37, +15.58) is wide because pct is unbounded above (REPORT.md item 10).
+
+S10.6a/b eps/c sensitivity: sensitivity_summary.csv (median_pct, p_holm; * = p_H < 0.05).
+  Conditions: eps in {1e-8, 1e-5, 1e-2} at c = 0.1; c in {0.01, 1} at eps = 1e-5. Driver sets fixed.
+
+S10.7 Fraction of target energy from floored eigen-directions
+  Columns "Degree sets"/"Cycle sets": transcribed from the REPORT.md sec. 5 table (median over
+  targets/subjects/k, c = 0.1), rounded to 2 dp. The underlying exact script output is not saved as a
+  CSV. My own pooled median from sensitivity_long.csv.gz (c = 0.1, all targets x subjects x k)
+  differs by <= 0.014 (e.g. 68, 1e-5: deg 0.924 / cyc 0.926 vs REPORT 0.930 / 0.931), presumably
+  different pooling; the qualitative statement (~0.92-0.98) is unaffected.
+  "Range of per-target medians" (my computation): median over subjects x k x method of floor_frac
+  per target at c = 0.1, eps = 1e-5 in sensitivity_long.csv.gz, then min--max across the 22 targets:
+  0.86-0.96 / 0.89-0.99 / 0.93-1.00 (68/114/219). REPORT.md text says "87-99% (median 0.89-0.99)";
+  this is close but not exactly reproducible from saved CSVs (lowest per-target median at 68 is 0.865).
+
+S10.8 Spin tests: spin_tests.csv (10,000 spins; Vasa primary, Alexander-Bloch "original" secondary;
+  p floor 1e-4). Rank divergence = degree rank - cycle rank of subject-averaged scores (+ = cycle priority).
+
+S10.9 Rank divergence by Yeo-7 network: rank_divergence_network_enrichment.csv (Vasa p, uncorrected).
+
+S10.10 Parcel lists: target_mask_parcels.csv, positive support only (none of the listed masks has
+  negative support; signed contrasts/gradients are not listed). Compact format: base region (L indices;
+  R indices). At 68 regions parcels are undivided, shown as "(L; R)". Full verbatim lists are in
+  REPORT.md "Exact parcels per mask" and target_mask_parcels.csv. Yeo-7 parcel assignment = majority
+  vote of fsaverage5 vertices (medial wall excluded), median purity 0.62/0.68/0.80
+  (parcel_network_assignment.csv).
+
+Gradient caveat (REPORT.md sec. 1): the paper's G1 projection (hoc/targets._fsaverage5_from_fslr_index)
+  was misregistered; registered-vs-legacy parcel G1 correlate r = 0.45/0.41/0.36. All "G1 (registered)"
+  rows use the corrected map; the paper's rank-divergence-G1 correlations (-0.23/-0.38/-0.32) used the
+  legacy map and their spin significance at 114/219 disappears with the registered map
+  (p_spin Vasa 0.16/0.12/0.23).
+
+Discrepancies with paper/planning/revision_plan.md
+  1. R7 "Status" bullet says Yeo Visual "reverses at eps = 1e-2". Saved data do NOT show this: Visual
+     at eps = 1e-2 is -1.55* / -2.41* / -0.23* (full) and -1.4* / -1.8* / -0.2* (drivers excluded), same
+     sign and Holm-significant at all scales. The target that reverses at eps = 1e-2 is UNIFORM CORTICAL
+     (full: +5.9* / +5.0* / +5.5* vs -6.2 / -4.1 at 114/219 with eps = 1e-5). Fix the plan text.
+  2. R7 numbers otherwise match: drivers-excluded Visual -5.7 / -8.9 / -1.7 (exact -5.72/-8.92/-1.73);
+     equal-distance intercept -1.1 (n.s.) / -6.9 / -2.8; coupling rho -0.77/-0.84/-0.82 (plan "-0.7 to -0.8").
+  3. R2.6 / S10 row in plan has no numbers to cross-check beyond the above.

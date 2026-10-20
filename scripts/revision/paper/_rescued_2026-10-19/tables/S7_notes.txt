@@ -1,0 +1,110 @@
+S7_setlevel.tex: notes per table
+=================================
+Repo root: /Users/cartersale/Research/projects/higher_order_connectomes (read-only; nothing in it was modified)
+Generator: scratchpad/scripts/make_s7.py (read-only pandas). All numbers are copied from saved CSVs unless a note says "computed".
+Common settings: A = A0 - (lambda_max + c)I, infinite-horizon Gramian, eps = 1e-5 where the eps floor applies.
+q1 = lambda1(W)/tr W. In the modal and q1 files, q1 is computed on the RAW W (no eps floor; q1/validation.json).
+"ER" (effective_rank) = exp-entropy of the eps-floored spectrum. "er_raw" = the same without the floor.
+None of the modal/* analyses include k = 1 (pairwise quantities are undefined). Exception: the L_S table, which uses set_q1.csv.gz.
+
+tab:S7_nodelevel — modal/node_level_correlations.csv, c = 0.1
+  Within-subject Spearman rho across regions; median across subjects, n_pos = subjects with rho > 0.
+  Modal (Gu and continuous-time) and v1^2 are c-independent (the file repeats them at every c). Average controllability varies with c.
+  Key: modal_gu vs strength -0.94 / -0.92 / -0.93 (0/70). avg_ctrl vs strength 0.94 / 0.94 / 0.93 (70/70).
+
+tab:S7_withinsubj — modal/within_subject_summary.csv
+  Spearman rho with q1 across each subject's 100 random sets (family == "random" only; script 02_analyze_modal.py §A).
+  Rows: rho_q1_{perron_loading, avg_ctrl, modal_gu, q1_G, red_G}, prho_q1_redGperp|node, prho_q1_redF|node.
+  c in {0.01, 0.1, 1}; k in {2, 3, 5}. Cells: median (n_pos / 70).
+  Partial = rank-residualized on {L_S, mean modal_gu, mean avg_ctrl}.
+  Plan check (R6): "within-subject rho 0.55–0.72 at c = 0.1"
+    = rho(q1(G_S), q1) at k = 3 ONLY: 0.72 / 0.58 / 0.55. (k = 5: 0.92 / 0.86 / 0.80; k = 2: 0.24 / 0.09 / 0.14.)
+    reframing_literature.md §Numerics says "k = 3". The plan omits that.
+    That predictor is the driver-Gram q1, not the redundancy statistic r_G. r_G itself at k = 3 is 0.46 / 0.34 / 0.22.
+    The plan's sentence ("How strongly drivers overlap ... predicts it ... within-subject rho 0.55–0.72") conflates the two.
+  Plan check: "partial rho 0.12–0.23 at c = 0.1, rising to 0.27–0.47 at c = 1" = prho_q1_redGperp|node at k = 3
+    (0.23 / 0.19 / 0.12; 0.47 / 0.40 / 0.27). At k = 5: 0.31 / 0.29 / 0.25 and 0.56 / 0.54 / 0.45. The plan should state k = 3.
+
+tab:S7_drivergram — modal/driver_gram_proxy.csv
+  Pooled over all sets (random + ranked + counterfactual) and all subjects, per scale × k × c.
+  Shown: rho_q1G_q1raw, median_q1G_minus_q1raw, median_q1raw_minus_pshare.
+  Both gaps are >= 0 in every cell, consistent with the bounds pi_S <= q1 <= q1(G_S).
+  NOTE: these are medians, not proofs. The bound holds per set per the derivation, but this table doesn't check per-set violations.
+
+tab:S7_comm_geo — q1/redundancy_summary.csv (per-subject rows in q1/redundancy_rho.csv)
+  Sets: 114 per subject (14 named criteria + 100 random; matched sets excluded); k in {2, 3, 5}.
+  Per subject, rho is averaged over k; the median across subjects is reported (per q1/REPORT.md).
+  p = paired Wilcoxon of |prho_comm|L| - |prho_geo_inv|L| across subjects, uncorrected.
+  Matches the plan's R6 numbers:
+    - comm | L: +0.24 / +0.28 / +0.27 (c = 0.1) and +0.50 / +0.46 / +0.38 (c = 1);
+    - geo(1/w) | L: -0.10 / -0.13 / -0.14 and -0.20 / -0.18 / -0.16;
+    - comm better in 68 / 68 / 70 (c = 0.1) and 70 / 70 / 70 (c = 1) of 70.
+  The plan's "-0.16 to -0.30" range at c = 1 mixes the 1/w and -log w versions (1/w: -0.16 to -0.20; -log w: -0.24 to -0.30).
+  The c = 0.01 n-better values are 56 / 38 / 40, as in the report.
+
+tab:S7_modal_sets — modal/set_overlap.csv (mean Jaccard across subjects) and modal/cycle_vs_counterfactual.csv
+  c = 0.1. Contrast = (cycle - random median) - (counterfactual - random median), which equals cycle - counterfactual; median (n_pos).
+  Plan check: "Cycle sets beat them on ER (+0.44 / +0.48 / +0.74; 55 / 65 / 69)" = effective_rank (floored), k = 3, c = 0.1.
+    Exact: 0.44 (55) / 0.48 (65) / 0.74 (69). At k = 5: 0.05 (35) / 0.55 (53) / 0.98 (67). The plan should state k = 3.
+  q1: cycle - modal is small and positive (cycle is MORE concentrated than modal sets): k = 3, 0.08 (69) / 0.04 (56) / 0.02 (57).
+  Modal (Gu / ct) sets share 0.00 nodes with cycle, degree and eigenvector sets at every k and scale. Confirms "zero overlap".
+  top_avg_ctrl vs eigenvector Jaccard = 0.88–0.98 at c = 0.1. reframing_literature.md says 0.89–0.96; that is a k = 3 subset.
+  LaTeX: this table is about 10 pt overfull at 1.5 cm margins in \tiny. Use landscape or shorten the row labels.
+
+tab:S7_rankedpred — modal/ranked_set_prediction_summary.csv, target q1, c = 0.1
+  Models are fit per subject on the 100 random sets (z-scored predictors), then applied to the cycle and degree sets.
+  Cells: median predicted cycle - degree Δq1 [Spearman rho between observed and predicted across subjects].
+  The node-score model overshoots the observed difference (frac_explained 0.80–1.98).
+  pi_S and q1(G_S) under-predict the magnitude (0.27–0.78) but track subjects best (rho up to 0.98).
+  ER-target rows exist in the CSV but are not tabulated. Node models predict the wrong sign for ER at 114/219 for k = 2–3.
+
+tab:S7_coverage — mechanism/coverage_by_criterion.csv, kgrp == "2+", 1/w distance columns (mean_d_inv, pct_inv, n_closer_inv)
+  Matches mechanism/REPORT.md §3 (betweenness -3.9 / -4.0 / -5.3, 70/70; degree -2.2 / -2.6 / -3.9; cycle -1.9 / -2.2 / -2.6, 60–65/70; modal +21 to +26, 0/70).
+  Small wording point: REPORT lists the modal percentile as "100th". The pct_inv values are 1.00 / 0.999 / 0.998.
+
+tab:S7_coverage_rho — COMPUTED from mechanism/coverage_rho.csv (per subject × c × k rows)
+  Took rows with k > 1, averaged per subject over k, then took the median across subjects and counted rho > 0.
+  This mirrors 03_coverage_distance.py line 124.
+  Raw 1/w: -0.08 to -0.45. Partial | L_S (1/w): +0.07 to +0.23. Matches the REPORT and plan ("+0.07–0.23").
+
+tab:S7_hubloading — mechanism/hub_loading_summary.csv (real_mean, null_mean, n_real_higher)
+  Null mean = mean over subjects of each subject's 50-null mean. n = subjects with real > own null mean. Wilcoxon p is in the CSV.
+  The row L_S/L_max (k = 5) is COMPUTED as mean(L_deg_5) / mean(L_max_5). It is a ratio of means, not a per-subject median.
+    Real: 0.89 / 0.91 / 0.78.
+    Strength null: 0.73 / 0.68 / 0.64. Geometric: 0.81 / 0.74 / 0.64. Weights: 0.81 / 0.74 / 0.65.
+  DISCREPANCY: the plan (Open items (a)) gives "78–91% of attainable vs 64–73%". The 64–73% covers the strength null only. Across all three nulls it is 64–81%.
+  cos(s, v1): real 0.82 / 0.76 / 0.69 vs strength null 0.77 / 0.79 / 0.78.
+    The real value is LOWER than the null at 114 and 219 (22/70 and 15/70 real > null). This matches the plan's R5 note on why the R1 share falls with scale.
+  rho(s_i, m_i): real 0.58 / 0.54 / 0.43 vs nulls 0.20–0.38. Matches.
+  Top-5 Jaccard: real 0.59 / 0.63 / 0.43 vs nulls 0.30–0.43. Matches.
+  L_max (largest attainable): real 0.74 / 0.67 / 0.58 vs nulls 0.53–0.79. Matches.
+  "strength_assort" here is bct assortativity_wei (0.14 / 0.21 / 0.19), not the edge-weighted r_W of the 19/10 Rayleigh amendment.
+
+tab:S7_assortcorr — mechanism/hub_loading_assort_corr.csv (across 70 real subjects)
+  bct assortativity predicts rho(s_i, m_i) (0.60 / 0.57 / 0.66) but not L_S, the gap or l1 (|rho| <= 0.29).
+  REPORT caveat: "|rho| <= 0.29". Correct. The largest is l1 at 68, rho = -0.286, p = 0.016 nominal. That value is nominally significant, so "does not predict" is slightly strong for l1 at 68.
+
+tab:S7_LS_q1 — source hunt for "L_S predicts q1 (rho = 0.86)"
+  The ONLY occurrences of the claim are in planning text:
+    - reframing_literature.md line 34 (table row 2, no pooling or c given);
+    - revision_plan.md lines 47 and 166;
+    - the commented outline in network_neuro_resubmission/main.tex line 131.
+  No saved CSV or report contains 0.86 for L_S vs q1.
+  Searched: regime/task3_perron_spearman.csv (L_S vs ER, not q1), spectra/ (L_S vs ER), modal/pooled_spearman.csv, q1/, mechanism/.
+  Candidates tabulated:
+    (a)–(d) COMPUTED read-only from q1/set_q1.csv.gz (columns loading, q1; all 18 families incl. random/matched; q1 on raw W). Script: scratchpad/scripts/ls_q1.py.
+      Full output: tables/ls_q1_candidates.csv, which also has "rankings+random only" variants.
+    (e) modal/pooled_spearman.csv, predictor perron_loading, target q1.
+    (f) modal/cycle_minus_degree_node_vs_set.csv "q1~perron_loading" (across subjects, cycle - degree differences).
+  Findings:
+    - At c = 0.1, pooled across k, rho(L_S, q1) is ~0 or negative: 0.03 / -0.06 / -0.19 (all k); -0.05 for all scales pooled.
+      This is because L_S grows with k while q1 does not, and at k = 1 the relation is strongly NEGATIVE (within-subject -0.89 / -0.87 / -0.87). So "across all sets" is NOT supported at c = 0.1.
+    - Within a fixed k >= 3 it is strong: within-subject median 0.80 / 0.52 / 0.35 (k = 3), 0.95 / 0.88 / 0.76 (k = 5).
+      Pooled (modal file): 0.55 / 0.40 / 0.23 (k = 3), 0.85 / 0.74 / 0.59 (k = 5).
+    - Strongest at c = 0.01: pooled k >= 2, 0.88 / 0.80 / 0.66 (0.80 all scales pooled); within-subject k >= 2, 0.87 / 0.83 / 0.66.
+    - The closest match to the plan's own R3 context (cycle vs degree) is (f): across subjects, Δ L_S vs Δ q1 at c = 0.1 = 0.87–0.91 / 0.88–0.91 / 0.78–0.84 over k.
+      The plain mean of those 9 cells is 0.865 (computed), which would round to 0.86. reframing_literature line 66 quotes this family at k = 3 as "0.83–0.91".
+      This is a plausible origin, but it is a guess. It is an across-subject correlation of differences, NOT "across all sets".
+  Recommendation: replace "rho = 0.86" with a stated version, e.g. "within subject, at fixed k ≥ 3 and c = 0.1, rho(L_S, q1) = 0.80/0.52/0.35 (k = 3) and 0.95/0.88/0.76 (k = 5); at c = 0.01, 0.87/0.83/0.66 (k ≥ 2)". Or use the across-subject Δ version and label it as such.
+  Also: the plan's "inverted-U L_S–ER pooled rho = +0.55 at c = 0.1" is distinct from all of the above.
+    fig_spectra_draft.png panel D prints +0.57 for all sets at 114 / k = 3; the plan's +0.55 comes from the 25/09 archive plan. Check the pooling before citing either.

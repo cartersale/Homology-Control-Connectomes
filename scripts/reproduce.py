@@ -87,8 +87,9 @@ STEPS: list[Step] = [
         ["--scale", "114", "--k-values", "5", "15"],
     ),
     # Revision analyses
-    *revision("spectra", "01_compute_spectra", "02_analyze", "03_make_figure", "04_perron_c_check",
-              "05_perron_extras", "06_make_spectra_figure"),
+    # 03_make_figure reads t4c_perron_piecewise.csv from 05_perron_extras.
+    *revision("spectra", "01_compute_spectra", "02_analyze", "04_perron_c_check", "05_perron_extras",
+              "03_make_figure", "06_make_spectra_figure"),
     *revision("regime", "00_validate", "01_csweep_perron", "02_nctpy_equivalence", "03_horizon_eps_largek",
               "04_energy_floor", "05_summarize_csweep", "06_perron_diagnostic", "08_perron_mode_sweep",
               "07_report_tables", "09_make_csweep_figure"),

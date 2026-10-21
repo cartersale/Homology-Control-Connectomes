@@ -166,7 +166,9 @@ def main() -> None:
         log_dir.mkdir(parents=True, exist_ok=True)
         log = log_dir / (step.name.replace("/", "__").replace(":", "_") + (f"__{step.variant}" if step.variant else "") + ".log")
         start = time.time()
-        with log.open("w") as handle:
+        with log.open("a") as handle:  # append: a resumed step keeps the log of the interrupted attempt
+            handle.write(f"=== {time.strftime('%Y-%m-%d %H:%M:%S')} {' '.join(cmd[1:])}\n")
+            handle.flush()
             result = subprocess.run(cmd, cwd=REPO_ROOT, stdout=handle, stderr=subprocess.STDOUT)
         elapsed = time.time() - start
         timings.append({"step": label, "seconds": round(elapsed, 1), "returncode": result.returncode})

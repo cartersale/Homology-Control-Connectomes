@@ -21,6 +21,8 @@ Run: python scripts/revision/lesion/01_run_reciprocal_lesion.py --run <name> [--
 from __future__ import annotations
 
 import argparse
+import os
+import pickle
 import sys
 import time
 import warnings
@@ -170,13 +172,24 @@ def main() -> None:
     if args.out is None:
         args.out = str(out_dir(ctx.root) / "lesion_rows.csv.gz")
     tasks = [(s, i, args.random_lesions, str(ctx.root)) for s in reversed(SCALES) for i in range(args.subjects)]
+    # One pickle per subject (exact values, unlike a CSV round trip), so an interrupted run
+    # resumes; rows are reassembled in task order, so the output is the same either way.
+    chunk_dir = out_dir(ctx.root) / "chunks" / f"random-lesions-{args.random_lesions}"
+    chunk_dir.mkdir(parents=True, exist_ok=True)
+    chunks = {task: chunk_dir / f"scale-{task[0]}_sub-{task[1]:03d}.pkl" for task in tasks}
+    todo = [task for task in tasks if not chunks[task].exists()]
+    print(f"{len(tasks) - len(todo)}/{len(tasks)} subjects already done", flush=True)
     t0 = time.time()
-    rows: list[dict] = []
     with ProcessPoolExecutor(max_workers=args.workers) as pool:
-        for j, part in enumerate(pool.map(run_subject, tasks, chunksize=1)):
-            rows.extend(part)
+        for j, (task, part) in enumerate(zip(todo, pool.map(run_subject, todo, chunksize=1))):
+            tmp = chunks[task].with_name(chunks[task].name + ".partial")
+            tmp.write_bytes(pickle.dumps(part, protocol=pickle.HIGHEST_PROTOCOL))
+            os.replace(tmp, chunks[task])
             if j % 10 == 0:
-                print(f"{j + 1}/{len(tasks)} done, {time.time() - t0:.0f}s", flush=True)
+                print(f"{j + 1}/{len(todo)} done, {time.time() - t0:.0f}s", flush=True)
+    rows: list[dict] = []
+    for task in tasks:
+        rows.extend(pickle.loads(chunks[task].read_bytes()))
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(rows).to_csv(out, index=False)

@@ -367,10 +367,13 @@ class RunContext:
             snapshot = self.root / "config" / self.config_path.name
             snapshot.parent.mkdir(parents=True, exist_ok=True)
             snapshot.write_bytes(self.config_path.read_bytes())
-        self._started = _now()
+        previous = manifest["stages"].get(self.stage, {})
+        resumed = previous.get("status") == "running" and not self.overwrite
+        self._started = previous["started"] if resumed else _now()
         manifest["stages"][self.stage] = {
             "status": "running",
             "started": self._started,
+            **({"resumed": [*previous.get("resumed", []), _now()]} if resumed else {}),
             "argv": self.argv,
             "overwrite": self.overwrite,
             "git": git_state(),

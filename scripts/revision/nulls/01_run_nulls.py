@@ -58,6 +58,10 @@ def chunk_paths(null: str, scale: int, subject: int):
     return base / f"sub-{subject:03d}_network.csv.gz", base / f"sub-{subject:03d}_sets.csv.gz"
 
 
+def partial(path: Path) -> Path:
+    return path.with_name(path.name + ".partial")
+
+
 def run_job(null: str, scale: int, subject: int, n_nulls: int) -> str:
     net_path, set_path = chunk_paths(null, scale, subject)
     # resume: chunks finished by an earlier (interrupted) run in this run directory are reused
@@ -86,11 +90,17 @@ def run_job(null: str, scale: int, subject: int, n_nulls: int) -> str:
             set_rows.extend(rows)
         net_dir = OUT_DIR / "networks" / null / f"scale-{scale}"
         net_dir.mkdir(parents=True, exist_ok=True)
-        np.savez_compressed(net_dir / f"sub-{subject:03d}.npz", triu=saved)
+        npz_path = net_dir / f"sub-{subject:03d}.npz"
+        with open(partial(npz_path), "wb") as handle:
+            np.savez_compressed(handle, triu=saved)
+        os.replace(partial(npz_path), npz_path)
 
     net_path.parent.mkdir(parents=True, exist_ok=True)
-    pd.DataFrame(set_rows).to_csv(set_path, index=False)
-    pd.DataFrame(net_rows).to_csv(net_path, index=False)  # written last: marks the job complete
+    # Write to a temporary name and rename, so an interrupted job never leaves a
+    # truncated chunk that a resumed run would mistake for a finished one.
+    for frame, path in ((set_rows, set_path), (net_rows, net_path)):  # network last: marks the job complete
+        pd.DataFrame(frame).to_csv(partial(path), index=False, compression="gzip")
+        os.replace(partial(path), path)
     return f"done {null} {scale} {subject} {time.time() - t0:.0f}s"
 
 

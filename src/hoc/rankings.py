@@ -43,9 +43,14 @@ def eigenvector_centrality_scores(adjacency: np.ndarray) -> np.ndarray:
     return np.asarray(bct.eigenvector_centrality_und(adjacency), dtype=float)
 
 
-def participation_coefficient_scores(adjacency: np.ndarray) -> np.ndarray:
-    """Participation coefficient after Louvain community detection."""
-    communities, _ = bct.community_louvain(adjacency)
+# Louvain is stochastic; a fixed seed makes the participation coefficient
+# reproducible. The preprint results used an unseeded call (baseline/PROVENANCE.md).
+LOUVAIN_SEED = 0
+
+
+def participation_coefficient_scores(adjacency: np.ndarray, seed: int = LOUVAIN_SEED) -> np.ndarray:
+    """Participation coefficient after (seeded) Louvain community detection."""
+    communities, _ = bct.community_louvain(adjacency, seed=seed)
     return np.asarray(bct.participation_coef(adjacency, communities), dtype=float)
 
 

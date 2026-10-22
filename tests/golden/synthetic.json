@@ -1,0 +1,1627 @@
+{
+ "hub_lesion/driver_sets.csv": {
+  "columns": [
+   "subject_id",
+   "scale",
+   "hub_count",
+   "k",
+   "method",
+   "selection_strategy",
+   "n_nodes_intact",
+   "n_nodes_lesioned",
+   "hub_node_indices",
+   "hub_region_labels",
+   "driver_node_indices_intact",
+   "driver_node_indices_lesioned",
+   "driver_region_labels"
+  ],
+  "numeric": {
+   "hub_count": {
+    "abs_sum": 80.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 80.0
+   },
+   "k": {
+    "abs_sum": 32.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 32.0
+   },
+   "n_nodes_intact": {
+    "abs_sum": 1088.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 1088.0
+   },
+   "n_nodes_lesioned": {
+    "abs_sum": 1008.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 1008.0
+   },
+   "scale": {
+    "abs_sum": 1088.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 1088.0
+   }
+  },
+  "rows": 16,
+  "text_sha256": "3bfe42f609b28fa5e1ef26d8a6031ac3a0820307c8b4912fd69dcbeb5ef4346f"
+ },
+ "hub_lesion/geometry_degradation.csv": {
+  "columns": [
+   "subject_id",
+   "scale",
+   "hub_count",
+   "k",
+   "method",
+   "selection_strategy",
+   "intact_log10_average_energy",
+   "lesioned_log10_average_energy",
+   "degradation_log10_average_energy",
+   "intact_effective_rank",
+   "lesioned_effective_rank",
+   "degradation_effective_rank",
+   "intact_participation_ratio",
+   "lesioned_participation_ratio",
+   "degradation_participation_ratio",
+   "intact_condition_number",
+   "lesioned_condition_number",
+   "intact_log10_condition_number",
+   "lesioned_log10_condition_number",
+   "degradation_log10_condition_number"
+  ],
+  "numeric": {
+   "degradation_effective_rank": {
+    "abs_sum": 16.48060277900487,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": -9.2767463828473
+   },
+   "degradation_log10_average_energy": {
+    "abs_sum": 0.6000192824692718,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": -0.6000192824692718
+   },
+   "degradation_log10_condition_number": {
+    "abs_sum": 8.809484178516271,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": -5.099637801504414
+   },
+   "degradation_participation_ratio": {
+    "abs_sum": 14.417927515815329,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": -8.747169462264416
+   },
+   "hub_count": {
+    "abs_sum": 80.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 80.0
+   },
+   "intact_condition_number": {
+    "abs_sum": 429309.97398764547,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 429309.97398764547
+   },
+   "intact_effective_rank": {
+    "abs_sum": 34.98017095151447,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 34.98017095151447
+   },
+   "intact_log10_average_energy": {
+    "abs_sum": 108.64257981447142,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 108.64257981447142
+   },
+   "intact_log10_condition_number": {
+    "abs_sum": 69.07186379271371,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 69.07186379271371
+   },
+   "intact_participation_ratio": {
+    "abs_sum": 26.95929741911489,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 26.95929741911489
+   },
+   "k": {
+    "abs_sum": 32.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 32.0
+   },
+   "lesioned_condition_number": {
+    "abs_sum": 241327.8737738022,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 241327.8737738022
+   },
+   "lesioned_effective_rank": {
+    "abs_sum": 44.256917334361766,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 44.256917334361766
+   },
+   "lesioned_log10_average_energy": {
+    "abs_sum": 108.04256053200217,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 108.04256053200217
+   },
+   "lesioned_log10_condition_number": {
+    "abs_sum": 63.9722259912093,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 63.9722259912093
+   },
+   "lesioned_participation_ratio": {
+    "abs_sum": 35.7064668813793,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 35.7064668813793
+   },
+   "scale": {
+    "abs_sum": 1088.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 1088.0
+   }
+  },
+  "rows": 16,
+  "text_sha256": "901be42486ae54a2f2fce99699840384ba7f7a7f60ac6ad763d81d9899a2d0f2"
+ },
+ "hub_lesion/target_energy_degradation.csv": {
+  "columns": [
+   "subject_id",
+   "scale",
+   "hub_count",
+   "k",
+   "method",
+   "selection_strategy",
+   "target_name",
+   "target_available",
+   "target_retained_norm",
+   "intact_target_energy",
+   "lesioned_target_energy",
+   "intact_log10_target_energy",
+   "lesioned_log10_target_energy",
+   "degradation_log10_target_energy"
+  ],
+  "numeric": {
+   "degradation_log10_target_energy": {
+    "abs_sum": 17.434619484325466,
+    "n_nan": 80,
+    "n_nonfinite": 0,
+    "sum": -16.349272504159657
+   },
+   "hub_count": {
+    "abs_sum": 6240.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 6240.0
+   },
+   "intact_log10_target_energy": {
+    "abs_sum": 5684.697197029593,
+    "n_nan": 80,
+    "n_nonfinite": 0,
+    "sum": 5684.697197029593
+   },
+   "intact_target_energy": {
+    "abs_sum": 104149928.18391722,
+    "n_nan": 80,
+    "n_nonfinite": 0,
+    "sum": 104149928.18391722
+   },
+   "k": {
+    "abs_sum": 2496.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 2496.0
+   },
+   "lesioned_log10_target_energy": {
+    "abs_sum": 5668.347924525434,
+    "n_nan": 80,
+    "n_nonfinite": 0,
+    "sum": 5668.347924525434
+   },
+   "lesioned_target_energy": {
+    "abs_sum": 102799045.94693291,
+    "n_nan": 80,
+    "n_nonfinite": 0,
+    "sum": 102799045.94693291
+   },
+   "scale": {
+    "abs_sum": 84864.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 84864.0
+   },
+   "target_available": {
+    "abs_sum": 1168.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 1168.0
+   },
+   "target_retained_norm": {
+    "abs_sum": 1161.456949066689,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 1161.456949066689
+   }
+  },
+  "rows": 1248,
+  "text_sha256": "a92dd4ae257f93f300874ba98c008b08d250ff5a0a22368a687ed5569e335830"
+ },
+ "primary/driver_sets.csv": {
+  "columns": [
+   "subject_id",
+   "scale",
+   "k",
+   "method",
+   "selection_strategy",
+   "node_indices",
+   "region_labels"
+  ],
+  "numeric": {
+   "k": {
+    "abs_sum": 272.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 272.0
+   },
+   "scale": {
+    "abs_sum": 9248.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 9248.0
+   }
+  },
+  "rows": 136,
+  "text_sha256": "e1c600540eb1ce8aab25dc31d5d634a8c66e7898eafd026eda5ca3007c8eb71f"
+ },
+ "primary/eigenspace_overlap.csv": {
+  "columns": [
+   "subject_id",
+   "scale",
+   "k",
+   "method_a",
+   "strategy_a",
+   "method_b",
+   "strategy_b",
+   "overlap"
+  ],
+  "numeric": {
+   "k": {
+    "abs_sum": 96.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 96.0
+   },
+   "overlap": {
+    "abs_sum": 21.65581696270385,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 21.65581696270385
+   },
+   "scale": {
+    "abs_sum": 3264.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 3264.0
+   }
+  },
+  "rows": 48,
+  "text_sha256": "b7a90310c7f77c7cf0f018413ae4926c159ce24125e4ec76ff2c396b4029316f"
+ },
+ "primary/geometry_metrics.csv": {
+  "columns": [
+   "subject_id",
+   "scale",
+   "k",
+   "method",
+   "selection_strategy",
+   "log10_average_energy",
+   "effective_rank",
+   "participation_ratio",
+   "log10_condition_number",
+   "log_min_eigenvalue"
+  ],
+  "numeric": {
+   "effective_rank": {
+    "abs_sum": 329.1654394053796,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 329.1654394053796
+   },
+   "k": {
+    "abs_sum": 272.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 272.0
+   },
+   "log10_average_energy": {
+    "abs_sum": 923.4387665455158,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 923.4387665455158
+   },
+   "log10_condition_number": {
+    "abs_sum": 574.3514853909157,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 574.3514853909157
+   },
+   "log_min_eigenvalue": {
+    "abs_sum": 1565.757863235951,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": -1565.757863235951
+   },
+   "participation_ratio": {
+    "abs_sum": 264.1495791968955,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 264.1495791968955
+   },
+   "scale": {
+    "abs_sum": 9248.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 9248.0
+   }
+  },
+  "rows": 136,
+  "text_sha256": "a2a206444967ba3655e5393dfca77336733a937dae5a87d8b05c209e6ddcb821"
+ },
+ "primary/greedy_comparison.csv": {
+  "columns": [
+   "subject_id",
+   "scale",
+   "k",
+   "method",
+   "static_log10_average_energy",
+   "greedy_log10_average_energy",
+   "greedy_minus_static_log10"
+  ],
+  "numeric": {
+   "greedy_log10_average_energy": {
+    "abs_sum": 162.93351685007974,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 162.93351685007974
+   },
+   "greedy_minus_static_log10": {
+    "abs_sum": 0.02858460583049313,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": -0.02858460583049313
+   },
+   "k": {
+    "abs_sum": 48.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 48.0
+   },
+   "scale": {
+    "abs_sum": 1632.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 1632.0
+   },
+   "static_log10_average_energy": {
+    "abs_sum": 162.96210145591024,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 162.96210145591024
+   }
+  },
+  "rows": 24,
+  "text_sha256": "c9ca4b808daa2428b6d7d284062becaae8ada2f177d682ad21790698c3deeeb8"
+ },
+ "primary/greedy_steps.csv": {
+  "columns": [
+   "subject_id",
+   "scale",
+   "k",
+   "method",
+   "step",
+   "added_node",
+   "greedy_average_energy",
+   "greedy_log10_average_energy",
+   "marginal_gain_log10"
+  ],
+  "numeric": {
+   "added_node": {
+    "abs_sum": 971.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 971.0
+   },
+   "greedy_average_energy": {
+    "abs_sum": 144773726.2752273,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 144773726.2752273
+   },
+   "greedy_log10_average_energy": {
+    "abs_sum": 162.72970396213668,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 162.72970396213668
+   },
+   "k": {
+    "abs_sum": 72.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 72.0
+   },
+   "marginal_gain_log10": {
+    "abs_sum": 0.3944873254204565,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 0.3944873254204565
+   },
+   "scale": {
+    "abs_sum": 1632.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 1632.0
+   },
+   "step": {
+    "abs_sum": 60.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 60.0
+   }
+  },
+  "rows": 24,
+  "text_sha256": "925baa1fcf0276c9397c8d2800e5b8d8e81b4e34859e0a0186407bb02afc6d72"
+ },
+ "primary/landscape_summary.csv": {
+  "columns": [
+   "subject_id",
+   "scale",
+   "k",
+   "n_candidate_sets",
+   "enumerated_exactly",
+   "variance_log10_energy",
+   "best_energy",
+   "q05_log10_energy",
+   "q25_log10_energy",
+   "q50_log10_energy",
+   "q75_log10_energy",
+   "q95_log10_energy",
+   "near_optimal_fraction_01pct",
+   "near_optimal_fraction_05pct",
+   "near_optimal_fraction_10pct"
+  ],
+  "numeric": {
+   "best_energy": {
+    "abs_sum": 49072755.50235467,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 49072755.50235467
+   },
+   "enumerated_exactly": {
+    "abs_sum": 4.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 4.0
+   },
+   "k": {
+    "abs_sum": 16.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 16.0
+   },
+   "n_candidate_sets": {
+    "abs_sum": 1072.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 1072.0
+   },
+   "near_optimal_fraction_01pct": {
+    "abs_sum": 7.691764705882353,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 7.691764705882353
+   },
+   "near_optimal_fraction_05pct": {
+    "abs_sum": 8.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 8.0
+   },
+   "near_optimal_fraction_10pct": {
+    "abs_sum": 8.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 8.0
+   },
+   "q05_log10_energy": {
+    "abs_sum": 54.30268814806623,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 54.30268814806623
+   },
+   "q25_log10_energy": {
+    "abs_sum": 54.30801001837647,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 54.30801001837647
+   },
+   "q50_log10_energy": {
+    "abs_sum": 54.31474757195723,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 54.31474757195723
+   },
+   "q75_log10_energy": {
+    "abs_sum": 54.32103192778324,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 54.32103192778324
+   },
+   "q95_log10_energy": {
+    "abs_sum": 54.32916401965211,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 54.32916401965211
+   },
+   "scale": {
+    "abs_sum": 544.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 544.0
+   },
+   "variance_log10_energy": {
+    "abs_sum": 1.0584028176296663e-05,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 1.0584028176296663e-05
+   }
+  },
+  "rows": 8,
+  "text_sha256": "6c4f15a604fae34ab4e3ec18061f9901d584fabdd7d35f0a8887e36981178f03"
+ },
+ "primary/node_level_energy.csv": {
+  "columns": [
+   "subject_id",
+   "scale",
+   "k",
+   "method",
+   "selection_strategy",
+   "random_sample",
+   "log10_average_energy",
+   "average_energy"
+  ],
+  "numeric": {
+   "average_energy": {
+    "abs_sum": 839111411.9428453,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 839111411.9428453
+   },
+   "k": {
+    "abs_sum": 272.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 272.0
+   },
+   "log10_average_energy": {
+    "abs_sum": 923.4387665455158,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 923.4387665455158
+   },
+   "random_sample": {
+    "abs_sum": 80.0,
+    "n_nan": 96,
+    "n_nonfinite": 0,
+    "sum": 80.0
+   },
+   "scale": {
+    "abs_sum": 9248.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 9248.0
+   }
+  },
+  "rows": 136,
+  "text_sha256": "a2a206444967ba3655e5393dfca77336733a937dae5a87d8b05c209e6ddcb821"
+ },
+ "primary/node_scores.csv": {
+  "columns": [
+   "subject_id",
+   "scale",
+   "node_index",
+   "region_label",
+   "base_region",
+   "hemi",
+   "anatomical_group",
+   "method",
+   "score",
+   "rank"
+  ],
+  "numeric": {
+   "node_index": {
+    "abs_sum": 82008.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 82008.0
+   },
+   "rank": {
+    "abs_sum": 84456.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 84456.0
+   },
+   "scale": {
+    "abs_sum": 166464.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 166464.0
+   },
+   "score": {
+    "abs_sum": 3771.563464187422,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 3771.563464187422
+   }
+  },
+  "rows": 2448,
+  "text_sha256": "9a0cea26187f5551793e61c59874f3731042e935e08a352bfac465c6e1dc3cc7"
+ },
+ "primary/rank_divergence.csv": {
+  "columns": [
+   "subject_id",
+   "scale",
+   "spearman_degree_vs_topology",
+   "mean_delta_log10_energy",
+   "spectral_radius_before_shift"
+  ],
+  "numeric": {
+   "mean_delta_log10_energy": {
+    "abs_sum": 0.0030534965240555,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": -0.0030534965240555
+   },
+   "scale": {
+    "abs_sum": 272.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 272.0
+   },
+   "spearman_degree_vs_topology": {
+    "abs_sum": 0.41328318024438043,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 0.41328318024438043
+   },
+   "spectral_radius_before_shift": {
+    "abs_sum": 49.792022851903376,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 49.792022851903376
+   }
+  },
+  "rows": 4,
+  "text_sha256": "91c060e482a41b0a210f5126dbe460bd533f873e316e59eba219be3f6c9768c0"
+ },
+ "primary/target_energies.csv": {
+  "columns": [
+   "subject_id",
+   "scale",
+   "k",
+   "method",
+   "selection_strategy",
+   "target_name",
+   "target_energy"
+  ],
+  "numeric": {
+   "k": {
+    "abs_sum": 2496.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 2496.0
+   },
+   "scale": {
+    "abs_sum": 84864.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 84864.0
+   },
+   "target_energy": {
+    "abs_sum": 111082875.73873505,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 111082875.73873505
+   }
+  },
+  "rows": 1248,
+  "text_sha256": "0d9ed0aa1462927ee530a15dc3920aa9a9f9c56e767ec50cc603d519317ecf4b"
+ },
+ "primary/target_geometry.csv": {
+  "columns": [
+   "subject_id",
+   "scale",
+   "k",
+   "method",
+   "selection_strategy",
+   "target_name",
+   "target_energy",
+   "hard_overlap",
+   "spectral_support",
+   "spectral_spread_effective_modes",
+   "spectral_entropy_effective_modes",
+   "bottom_dim"
+  ],
+  "numeric": {
+   "bottom_dim": {
+    "abs_sum": 6240.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 6240.0
+   },
+   "hard_overlap": {
+    "abs_sum": 90.1026264671813,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 90.1026264671813
+   },
+   "k": {
+    "abs_sum": 2496.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 2496.0
+   },
+   "scale": {
+    "abs_sum": 84864.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 84864.0
+   },
+   "spectral_entropy_effective_modes": {
+    "abs_sum": 34333.183828766414,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 34333.183828766414
+   },
+   "spectral_spread_effective_modes": {
+    "abs_sum": 23345.146586388728,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 23345.146586388728
+   },
+   "spectral_support": {
+    "abs_sum": 15.21305320858729,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 15.21305320858729
+   },
+   "target_energy": {
+    "abs_sum": 111082875.73873505,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 111082875.73873505
+   }
+  },
+  "rows": 1248,
+  "text_sha256": "0d9ed0aa1462927ee530a15dc3920aa9a9f9c56e767ec50cc603d519317ecf4b"
+ },
+ "primary/target_metadata.csv": {
+  "columns": [
+   "scale",
+   "target_name",
+   "target_label",
+   "target_family",
+   "target_axis_class",
+   "axis_position",
+   "node_index",
+   "hemi",
+   "base_region",
+   "region_label",
+   "n_support_nodes"
+  ],
+  "numeric": {
+   "axis_position": {
+    "abs_sum": 161.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 161.0
+   },
+   "n_support_nodes": {
+    "abs_sum": 356.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 356.0
+   },
+   "node_index": {
+    "abs_sum": 2278.0,
+    "n_nan": 10,
+    "n_nonfinite": 0,
+    "sum": 2278.0
+   },
+   "scale": {
+    "abs_sum": 5304.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 5304.0
+   }
+  },
+  "rows": 78,
+  "text_sha256": "f2805e2b8539b9568fe11d4a6ade50e91b269bbeb269c5b7fadb55af0e47b548"
+ },
+ "primary/weighted_inputs.csv": {
+  "columns": [
+   "subject_id",
+   "scale",
+   "support_size",
+   "method",
+   "metric",
+   "target_name",
+   "value"
+  ],
+  "numeric": {
+   "scale": {
+    "abs_sum": 343808.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 343808.0
+   },
+   "support_size": {
+    "abs_sum": 22752.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 22752.0
+   },
+   "value": {
+    "abs_sum": 419142341.21299016,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 419142341.21299016
+   }
+  },
+  "rows": 5056,
+  "text_sha256": "356933b5315949c6d6ff64181e8662b0a976c6412ed59bd26c1ed83faa04512d"
+ },
+ "processed/atlas_labels_scale-68.csv": {
+  "columns": [
+   "node_index",
+   "scale",
+   "hemi",
+   "atlas_label",
+   "region_label",
+   "base_region",
+   "anatomical_group"
+  ],
+  "numeric": {
+   "node_index": {
+    "abs_sum": 2278.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 2278.0
+   },
+   "scale": {
+    "abs_sum": 4624.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 4624.0
+   }
+  },
+  "rows": 68,
+  "text_sha256": "1769c46db82bf35f4c8e9ee43bb2ded13a31a49c612d7d1858e19e8607ddf372"
+ },
+ "processed/target_metadata_scale-68.csv": {
+  "columns": [
+   "scale",
+   "target_name",
+   "target_label",
+   "target_family",
+   "target_axis_class",
+   "axis_position",
+   "node_index",
+   "hemi",
+   "base_region",
+   "region_label",
+   "n_support_nodes"
+  ],
+  "numeric": {
+   "axis_position": {
+    "abs_sum": 161.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 161.0
+   },
+   "n_support_nodes": {
+    "abs_sum": 356.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 356.0
+   },
+   "node_index": {
+    "abs_sum": 2278.0,
+    "n_nan": 10,
+    "n_nonfinite": 0,
+    "sum": 2278.0
+   },
+   "scale": {
+    "abs_sum": 5304.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 5304.0
+   }
+  },
+  "rows": 78,
+  "text_sha256": "f2805e2b8539b9568fe11d4a6ade50e91b269bbeb269c5b7fadb55af0e47b548"
+ },
+ "robustness/perturbation_summary.csv": {
+  "columns": [
+   "subject_id",
+   "scale",
+   "k",
+   "method",
+   "perturbation_family",
+   "level",
+   "mean_degradation",
+   "variance_degradation",
+   "worst_decile_degradation"
+  ],
+  "numeric": {
+   "k": {
+    "abs_sum": 192.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 192.0
+   },
+   "level": {
+    "abs_sum": 11.200000000000003,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 11.200000000000003
+   },
+   "mean_degradation": {
+    "abs_sum": 0.07609574156130196,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": -0.06697487226345772
+   },
+   "scale": {
+    "abs_sum": 6528.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 6528.0
+   },
+   "variance_degradation": {
+    "abs_sum": 4.116802910498002e-05,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 4.116802910498002e-05
+   },
+   "worst_decile_degradation": {
+    "abs_sum": 0.07598578773771056,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": -0.04563301693692192
+   }
+  },
+  "rows": 96,
+  "text_sha256": "898fa64d1bfac8813923135530cbbc9267a1b2ec7a31139c2b60f47c8967b7f0"
+ },
+ "robustness/sensitivity_summary.csv": {
+  "columns": [
+   "subject_id",
+   "scale",
+   "k",
+   "sensitivity_family",
+   "c_value",
+   "epsilon_case",
+   "epsilon",
+   "horizon",
+   "method",
+   "enumerated_exactly",
+   "average_energy",
+   "log10_average_energy",
+   "effective_rank",
+   "participation_ratio",
+   "condition_number",
+   "log10_condition_number",
+   "min_eigenvalue",
+   "max_eigenvalue",
+   "log_min_eigenvalue",
+   "eigenvalues_at_floor",
+   "fraction_eigenvalues_at_floor",
+   "variance_log10_energy",
+   "best_energy",
+   "q05_log10_energy",
+   "q25_log10_energy",
+   "q50_log10_energy",
+   "q75_log10_energy",
+   "q95_log10_energy",
+   "near_optimal_fraction_01pct",
+   "near_optimal_fraction_05pct",
+   "near_optimal_fraction_10pct"
+  ],
+  "numeric": {
+   "average_energy": {
+    "abs_sum": 493068490223.2229,
+    "n_nan": 48,
+    "n_nonfinite": 0,
+    "sum": 493068490223.2229
+   },
+   "best_energy": {
+    "abs_sum": 0.0,
+    "n_nan": 288,
+    "n_nonfinite": 0,
+    "sum": 0.0
+   },
+   "c_value": {
+    "abs_sum": 145.44,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 145.44
+   },
+   "condition_number": {
+    "abs_sum": 19714858305.369064,
+    "n_nan": 48,
+    "n_nonfinite": 0,
+    "sum": 19714858305.369064
+   },
+   "effective_rank": {
+    "abs_sum": 4625.81251702953,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 4625.81251702953
+   },
+   "eigenvalues_at_floor": {
+    "abs_sum": 10242.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 10242.0
+   },
+   "enumerated_exactly": {
+    "abs_sum": 0.0,
+    "n_nan": 288,
+    "n_nonfinite": 0,
+    "sum": 0.0
+   },
+   "epsilon": {
+    "abs_sum": 0.9604809600000002,
+    "n_nan": 48,
+    "n_nonfinite": 0,
+    "sum": 0.9604809600000002
+   },
+   "fraction_eigenvalues_at_floor": {
+    "abs_sum": 150.61764705882354,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 150.61764705882354
+   },
+   "horizon": {
+    "abs_sum": 144.0,
+    "n_nan": 144,
+    "n_nonfinite": 0,
+    "sum": 144.0
+   },
+   "k": {
+    "abs_sum": 1344.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 1344.0
+   },
+   "log10_average_energy": {
+    "abs_sum": 1619.8955954096891,
+    "n_nan": 48,
+    "n_nonfinite": 0,
+    "sum": 1619.8955954096891
+   },
+   "log10_condition_number": {
+    "abs_sum": 1078.799416845134,
+    "n_nan": 48,
+    "n_nonfinite": 0,
+    "sum": 1078.799416845134
+   },
+   "log_min_eigenvalue": {
+    "abs_sum": 2763.102111592855,
+    "n_nan": 48,
+    "n_nonfinite": 0,
+    "sum": -2763.102111592855
+   },
+   "max_eigenvalue": {
+    "abs_sum": 591.8331670472452,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 591.8331670472452
+   },
+   "min_eigenvalue": {
+    "abs_sum": 0.9604809600000002,
+    "n_nan": 48,
+    "n_nonfinite": 0,
+    "sum": 0.9604809600000002
+   },
+   "near_optimal_fraction_01pct": {
+    "abs_sum": 0.0,
+    "n_nan": 288,
+    "n_nonfinite": 0,
+    "sum": 0.0
+   },
+   "near_optimal_fraction_05pct": {
+    "abs_sum": 0.0,
+    "n_nan": 288,
+    "n_nonfinite": 0,
+    "sum": 0.0
+   },
+   "near_optimal_fraction_10pct": {
+    "abs_sum": 0.0,
+    "n_nan": 288,
+    "n_nonfinite": 0,
+    "sum": 0.0
+   },
+   "participation_ratio": {
+    "abs_sum": 3267.0764768666277,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 3267.0764768666277
+   },
+   "q05_log10_energy": {
+    "abs_sum": 0.0,
+    "n_nan": 288,
+    "n_nonfinite": 0,
+    "sum": 0.0
+   },
+   "q25_log10_energy": {
+    "abs_sum": 0.0,
+    "n_nan": 288,
+    "n_nonfinite": 0,
+    "sum": 0.0
+   },
+   "q50_log10_energy": {
+    "abs_sum": 0.0,
+    "n_nan": 288,
+    "n_nonfinite": 0,
+    "sum": 0.0
+   },
+   "q75_log10_energy": {
+    "abs_sum": 0.0,
+    "n_nan": 288,
+    "n_nonfinite": 0,
+    "sum": 0.0
+   },
+   "q95_log10_energy": {
+    "abs_sum": 0.0,
+    "n_nan": 288,
+    "n_nonfinite": 0,
+    "sum": 0.0
+   },
+   "scale": {
+    "abs_sum": 19584.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 19584.0
+   },
+   "variance_log10_energy": {
+    "abs_sum": 0.0,
+    "n_nan": 288,
+    "n_nonfinite": 0,
+    "sum": 0.0
+   }
+  },
+  "rows": 288,
+  "text_sha256": "bbd98fc74b90efc3a228279751bff3cbbede84a83e1847fc0a0bfd4d220dc678"
+ },
+ "statistics/target_named_summary.csv": {
+  "columns": [
+   "scale",
+   "selection_strategy",
+   "target_name",
+   "target_label",
+   "target_family",
+   "target_axis_class",
+   "axis_position",
+   "metric",
+   "n_subjects",
+   "median",
+   "ci_low",
+   "ci_high",
+   "wilcoxon_statistic",
+   "p_value",
+   "p_value_holm",
+   "reject_holm"
+  ],
+  "numeric": {
+   "axis_position": {
+    "abs_sum": 50.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 50.0
+   },
+   "ci_high": {
+    "abs_sum": 29035.253490274674,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 25428.92150702232
+   },
+   "ci_low": {
+    "abs_sum": 45402.06521714217,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": -45359.191353073715
+   },
+   "median": {
+    "abs_sum": 24181.176906596185,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": -999.6875906771385
+   },
+   "n_subjects": {
+    "abs_sum": 80.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 80.0
+   },
+   "p_value": {
+    "abs_sum": 6.75,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 6.75
+   },
+   "p_value_holm": {
+    "abs_sum": 20.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 20.0
+   },
+   "reject_holm": {
+    "abs_sum": 0.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 0.0
+   },
+   "scale": {
+    "abs_sum": 1360.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 1360.0
+   },
+   "wilcoxon_statistic": {
+    "abs_sum": 29.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 29.0
+   }
+  },
+  "rows": 20,
+  "text_sha256": "d6669b8888cd70b84c0b52bd95d33b0bd130a9f27f84232d8d556205d85b17ef"
+ },
+ "statistics/target_pairwise_differences.csv": {
+  "columns": [
+   "subject_id",
+   "scale",
+   "k",
+   "selection_strategy",
+   "target_name",
+   "degree_energy",
+   "cycle_energy",
+   "cycle_minus_degree",
+   "pct_cycle_minus_degree",
+   "target_label",
+   "target_family",
+   "target_axis_class",
+   "axis_position",
+   "node_index",
+   "hemi",
+   "base_region",
+   "region_label",
+   "n_support_nodes"
+  ],
+  "numeric": {
+   "axis_position": {
+    "abs_sum": 1288.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 1288.0
+   },
+   "cycle_energy": {
+    "abs_sum": 55476045.00860203,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 55476045.00860203
+   },
+   "cycle_minus_degree": {
+    "abs_sum": 4022573.3561365884,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": -130785.72153097845
+   },
+   "degree_energy": {
+    "abs_sum": 55606830.730133004,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 55606830.730133004
+   },
+   "k": {
+    "abs_sum": 1248.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 1248.0
+   },
+   "n_support_nodes": {
+    "abs_sum": 2848.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 2848.0
+   },
+   "node_index": {
+    "abs_sum": 18224.0,
+    "n_nan": 80,
+    "n_nonfinite": 0,
+    "sum": 18224.0
+   },
+   "pct_cycle_minus_degree": {
+    "abs_sum": 2487006.380016162,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 2482405.395147467
+   },
+   "scale": {
+    "abs_sum": 42432.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 42432.0
+   }
+  },
+  "rows": 624,
+  "text_sha256": "356248b5bc3c2e07cae3c83d9b4b63a622c4679b7880e21415e9fc140234db47"
+ },
+ "statistics/target_single_parcel_distribution_summary.csv": {
+  "columns": [
+   "scale",
+   "selection_strategy",
+   "target_family",
+   "metric",
+   "n_parcels",
+   "median_parcel_subject_average",
+   "ci_low",
+   "ci_high",
+   "n_significantly_negative",
+   "n_significantly_positive",
+   "n_null",
+   "fraction_significantly_negative",
+   "fraction_significantly_positive",
+   "fraction_null"
+  ],
+  "numeric": {
+   "ci_high": {
+    "abs_sum": 455.00590639498114,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 455.00590639498114
+   },
+   "ci_low": {
+    "abs_sum": 103.72195402459609,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 103.72195402459609
+   },
+   "fraction_null": {
+    "abs_sum": 2.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 2.0
+   },
+   "fraction_significantly_negative": {
+    "abs_sum": 0.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 0.0
+   },
+   "fraction_significantly_positive": {
+    "abs_sum": 0.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 0.0
+   },
+   "median_parcel_subject_average": {
+    "abs_sum": 288.17140841667816,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 288.17140841667816
+   },
+   "n_null": {
+    "abs_sum": 136.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 136.0
+   },
+   "n_parcels": {
+    "abs_sum": 136.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 136.0
+   },
+   "n_significantly_negative": {
+    "abs_sum": 0.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 0.0
+   },
+   "n_significantly_positive": {
+    "abs_sum": 0.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 0.0
+   },
+   "scale": {
+    "abs_sum": 136.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 136.0
+   }
+  },
+  "rows": 2,
+  "text_sha256": "b026623259019afc1b223e70264681377a8c3ff54b8994e30748a5b58ff7d59c"
+ },
+ "statistics/target_single_parcel_tests.csv": {
+  "columns": [
+   "scale",
+   "selection_strategy",
+   "target_family",
+   "target_name",
+   "target_label",
+   "node_index",
+   "hemi",
+   "base_region",
+   "region_label",
+   "metric",
+   "n_subjects",
+   "mean_subject_average",
+   "median_subject_average",
+   "wilcoxon_statistic",
+   "p_value",
+   "p_value_bh",
+   "reject_bh"
+  ],
+  "numeric": {
+   "mean_subject_average": {
+    "abs_sum": 686771.4465657524,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 299434.8704589125
+   },
+   "median_subject_average": {
+    "abs_sum": 524375.915548989,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 292553.6945837219
+   },
+   "n_subjects": {
+    "abs_sum": 544.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 544.0
+   },
+   "node_index": {
+    "abs_sum": 4556.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 4556.0
+   },
+   "p_value": {
+    "abs_sum": 61.125,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 61.125
+   },
+   "p_value_bh": {
+    "abs_sum": 87.46651943807015,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 87.46651943807015
+   },
+   "reject_bh": {
+    "abs_sum": 0.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 0.0
+   },
+   "scale": {
+    "abs_sum": 9248.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 9248.0
+   },
+   "wilcoxon_statistic": {
+    "abs_sum": 261.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 261.0
+   }
+  },
+  "rows": 136,
+  "text_sha256": "35797903c965d6fa73599545c5c74a1f70161599d579c80ab9b822c10c0cd0f7"
+ },
+ "statistics/target_subject_differences.csv": {
+  "columns": [
+   "subject_id",
+   "scale",
+   "selection_strategy",
+   "target_name",
+   "target_label",
+   "target_family",
+   "target_axis_class",
+   "axis_position",
+   "node_index",
+   "hemi",
+   "base_region",
+   "region_label",
+   "n_support_nodes",
+   "degree_energy",
+   "cycle_energy",
+   "cycle_minus_degree",
+   "pct_cycle_minus_degree"
+  ],
+  "numeric": {
+   "axis_position": {
+    "abs_sum": 644.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 644.0
+   },
+   "cycle_energy": {
+    "abs_sum": 27738022.50430101,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 27738022.50430101
+   },
+   "cycle_minus_degree": {
+    "abs_sum": 1947610.0157065522,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": -65392.86076548919
+   },
+   "degree_energy": {
+    "abs_sum": 27803415.365066506,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 27803415.365066506
+   },
+   "n_support_nodes": {
+    "abs_sum": 1424.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 1424.0
+   },
+   "node_index": {
+    "abs_sum": 9112.0,
+    "n_nan": 40,
+    "n_nonfinite": 0,
+    "sum": 9112.0
+   },
+   "pct_cycle_minus_degree": {
+    "abs_sum": 1243424.8885316486,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 1241202.6975737333
+   },
+   "scale": {
+    "abs_sum": 21216.0,
+    "n_nan": 0,
+    "n_nonfinite": 0,
+    "sum": 21216.0
+   }
+  },
+  "rows": 312,
+  "text_sha256": "6d707513586633fca7a6ba7c63f502d33e542a1841fd28ac9d066c30461ce47c"
+ }
+}

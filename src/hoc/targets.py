@@ -8,7 +8,8 @@ import nibabel as nib
 import numpy as np
 import pandas as pd
 
-from .atlas import EXCLUDED_LABELS, SCALE_TO_RESOLUTION, keyword_mask
+from .atlas import EXCLUDED_LABELS, SCALE_TO_RESOLUTION, region_set_mask
+from . import synthetic
 from .paths import resolve_repo_path
 
 
@@ -96,8 +97,8 @@ def build_targets(
     atlas_dir: str,
 ) -> dict[str, np.ndarray]:
     """Create fixed target states along a concentrated-to-distributed axis."""
-    association_mask = keyword_mask(labels, anatomy_config["association_keywords"])
-    occipital_mask = keyword_mask(labels, anatomy_config["occipital_keywords"])
+    association_mask = region_set_mask(labels, anatomy_config["association_regions"])
+    occipital_mask = region_set_mask(labels, anatomy_config["occipital_regions"])
     cortical = cortical_mask(labels)
 
     targets: dict[str, np.ndarray] = {}
@@ -257,6 +258,8 @@ def margulies_principal_gradient(labels: pd.DataFrame, atlas_dir: str) -> np.nda
     affinity, which is dominated by the interhemispheric split, this yields the genuine
     unimodal-to-transmodal gradient of macroscale cortical organization.
     """
+    if synthetic.is_synthetic(atlas_dir):
+        return synthetic.gradient(labels)
     from neuromaps.datasets import fetch_annotation
 
     scale = int(labels["scale"].iloc[0])

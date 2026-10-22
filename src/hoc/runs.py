@@ -34,6 +34,7 @@ from importlib import metadata as _metadata
 from pathlib import Path
 
 from .paths import REPO_ROOT
+from .threads import THREAD_ENV_VARS, threadpool_record
 
 RUNS_ROOT_ENV = "HOC_RUNS_ROOT"
 RUN_ENV = "HOC_RUN"
@@ -58,13 +59,6 @@ TRACKED_PACKAGES = (
     "gudhi",
     "joblib",
     "matplotlib",
-)
-THREAD_ENV_VARS = (
-    "OMP_NUM_THREADS",
-    "OPENBLAS_NUM_THREADS",
-    "MKL_NUM_THREADS",
-    "VECLIB_MAXIMUM_THREADS",
-    "NUMEXPR_NUM_THREADS",
 )
 
 
@@ -190,6 +184,7 @@ def environment_record() -> dict:
         "packages": package_versions(),
         "blas": blas_info(),
         "threads": {name: os.environ.get(name) for name in THREAD_ENV_VARS},
+        "threadpools": threadpool_record(),
     }
 
 
@@ -372,10 +367,13 @@ class RunContext:
             snapshot = self.root / "config" / self.config_path.name
             snapshot.parent.mkdir(parents=True, exist_ok=True)
             snapshot.write_bytes(self.config_path.read_bytes())
-        self._started = _now()
+        previous = manifest["stages"].get(self.stage, {})
+        resumed = previous.get("status") == "running" and not self.overwrite
+        self._started = previous["started"] if resumed else _now()
         manifest["stages"][self.stage] = {
             "status": "running",
             "started": self._started,
+            **({"resumed": [*previous.get("resumed", []), _now()]} if resumed else {}),
             "argv": self.argv,
             "overwrite": self.overwrite,
             "git": git_state(),

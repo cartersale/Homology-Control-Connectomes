@@ -53,25 +53,16 @@ noise_sigmas = []
 dropout_probabilities = []
 
 [anatomy]
-association_keywords = [
-  "frontal",
-  "parietal",
-  "precuneus",
-  "cingulate",
-  "insula",
+# Exact Desikan-Killiany base-region names (no substring matching: "cuneus"
+# used to match "precuneus", see baseline/PROVENANCE.md).
+association_regions = [
+  "superiorfrontal", "rostralmiddlefrontal", "caudalmiddlefrontal",
+  "lateralorbitofrontal", "medialorbitofrontal", "frontalpole",
+  "superiorparietal", "inferiorparietal", "precuneus",
+  "rostralanteriorcingulate", "caudalanteriorcingulate", "posteriorcingulate",
+  "isthmuscingulate", "insula",
 ]
-frontocingulate_keywords = [
-  "frontal",
-  "cingulate",
-]
-occipital_keywords = [
-  "cuneus",
-  "lateraloccipital",
-  "lingual",
-  "pericalcarine",
-  "occipital",
-]
-
+occipital_regions = ["cuneus", "lateraloccipital", "lingual", "pericalcarine"]
 [dong]
 aphasia_dir = "data/aphasia"
 healthy_dir = "data/healthy"

@@ -8,6 +8,7 @@ import nibabel as nib
 import numpy as np
 import pandas as pd
 
+from . import synthetic
 from .paths import resolve_repo_path
 
 
@@ -24,6 +25,10 @@ EXCLUDED_LABELS = {"unknown", "corpuscallosum"}
 
 def build_label_table(scale: int, atlas_dir: str | Path) -> pd.DataFrame:
     """Load atlas labels for a Cammoun scale from FreeSurfer annotation files."""
+    if synthetic.is_synthetic(atlas_dir):
+        labels = pd.DataFrame(synthetic.label_rows(scale))
+        labels["anatomical_group"] = labels["base_region"].map(classify_region_group)
+        return labels
     atlas_path = resolve_repo_path(atlas_dir)
     resolution = SCALE_TO_RESOLUTION[scale]
     rows = []
@@ -63,6 +68,9 @@ def strip_subparcel_suffix(name: str) -> str:
 def classify_region_group(region_name: str) -> str:
     """Assign a coarse anatomical group from region keywords."""
     region_name = region_name.lower()
+    # precuneus first: "cuneus" is a substring of it
+    if "precuneus" in region_name:
+        return "parietal"
     if any(token in region_name for token in ("cuneus", "lingual", "pericalcarine", "lateraloccipital", "occipital")):
         return "occipital"
     if "cingulate" in region_name:
@@ -78,10 +86,14 @@ def classify_region_group(region_name: str) -> str:
     return "other"
 
 
-def keyword_mask(labels: pd.DataFrame, keywords: list[str]) -> np.ndarray:
-    """Build a boolean mask over regions based on keyword matches."""
-    pattern = "|".join(keywords)
-    return labels["base_region"].str.contains(pattern, case=False, regex=True).to_numpy()
+def region_set_mask(labels: pd.DataFrame, base_regions: list[str]) -> np.ndarray:
+    """Parcels whose base region is exactly one of ``base_regions``."""
+    wanted = {name.lower() for name in base_regions}
+    present = set(labels["base_region"].str.lower())
+    missing = wanted - present
+    if missing:
+        raise ValueError(f"Base regions not in the atlas: {', '.join(sorted(missing))}")
+    return labels["base_region"].str.lower().isin(wanted).to_numpy()
 
 
 def surface_values_from_node_scores(

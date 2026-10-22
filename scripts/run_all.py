@@ -12,6 +12,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import hoc  # noqa: F401 - sets the BLAS thread defaults the stages inherit
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 

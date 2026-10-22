@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from scipy.io import loadmat
 
+from . import synthetic
 from .atlas import build_label_table
 from .paths import resolve_repo_path
 from .preprocessing import preprocess_structural_adjacency
@@ -18,6 +19,8 @@ SCALE_ORDER = [68, 114, 219, 448, 1000]
 
 def load_raw_connectomes(mat_path: str | Path) -> dict[int, np.ndarray]:
     """Load structural connectomes from the Griffa et al. MATLAB release."""
+    if synthetic.is_synthetic(mat_path):
+        return synthetic.connectomes(mat_path)
     path = resolve_repo_path(mat_path)
     mat = loadmat(path, squeeze_me=True, struct_as_record=False)
     sc_matrices = mat["connMatrices"].SC

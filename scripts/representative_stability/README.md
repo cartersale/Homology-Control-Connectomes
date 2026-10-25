@@ -10,7 +10,7 @@ canonical; the cycle chosen to represent it is not. The main pipeline
 cocycle representatives, so a different-but-equally-valid representative can shift
 every per-node score while leaving the barcode identical.
 
-This directory implements **schemes 2 and 3 of `comper.md`** — length-minimized
+This directory implements two alternative representative schemes — length-minimized
 (geodesic) representatives and an independent library's representatives (GUDHI) —
 and runs the three-level readout against the Ripser baseline.
 
@@ -40,9 +40,9 @@ Two knobs:
 - `--weight-mode {filtration,hops}` — length as summed edge distance (geodesic,
   default) or edge count (combinatorially shortest).
 - `--threshold-mode {birth,below_death,death}` — which filtration stage the search
-  runs in. **Default is `birth`, deliberately deviating from `comper.md`'s "graph at
-  the death threshold".** Vietoris-Rips is a *flag* complex: a cycle is filled as
-  soon as its own diameter is reached, so searching at the death threshold routinely
+  runs in. **Default is `birth`, not the graph at the death threshold.** Vietoris-Rips
+  is a *flag* complex: a cycle is filled as soon as its own diameter is reached, so
+  searching at the death threshold routinely
   returns a shortest cycle that already bounds — homologous to zero, and not a
   representative of the class at all. On scale-114 subject 0, searching at `death`
   makes 110 of 115 representatives bounding triangles; `below_death` still makes 64
